@@ -1,0 +1,25 @@
+import type { SqlDatabase, SqlResult, SqlValue } from '@/data/database';
+
+type Row = Record<string, SqlValue>;
+export class MemoryDatabase implements SqlDatabase {
+  public readonly statements: string[] = [];
+  private readonly tables = new Map<string, Row[]>();
+  private backup: Map<string, Row[]> | null = null;
+  failOn: string | null = null;
+
+  async run(sql: string, params: SqlValue[] = []): Promise<SqlResult> {
+    this.statements.push(sql);
+    if (this.failOn && sql.includes(this.failOn)) throw new Error(`Injected failure: ${this.failOn}`);
+    const insert = /INSERT(?: OR REPLACE)? INTO (\w+) \(([^)]+)\)/i.exec(sql);
+    if (insert) { const [, table, columns] = insert; const row = Object.fromEntries(columns.split(',').map((column, index) => [column.trim(), params[index]])); const rows = this.tables.get(table) ?? []; const idIndex = table === 'schema_migrations' ? rows.findIndex((item) => item.version === row.version) : rows.findIndex((item) => item.id === row.id); if (idIndex >= 0) rows[idIndex] = row; else rows.push(row); this.tables.set(table, rows); return { changes: 1, lastInsertRowId: rows.length }; }
+    const update = /UPDATE (\w+) SET (.+) WHERE id = \?/i.exec(sql);
+    if (update) { const [, table, sets] = update; const rows = this.tables.get(table) ?? []; const id = params.at(-1); const row = rows.find((item) => item.id === id); if (!row) return { changes: 0, lastInsertRowId: 0 }; sets.split(',').forEach((pair, index) => { row[pair.split('=')[0].trim()] = params[index]; }); return { changes: 1, lastInsertRowId: 0 }; }
+    return { changes: 0, lastInsertRowId: 0 };
+  }
+  async getFirst<T>(sql: string, params: SqlValue[] = []): Promise<T | null> { const table = /FROM (\w+)/i.exec(sql)?.[1]; const rows = table ? this.tables.get(table) ?? [] : []; if (sql.includes('version = ?')) return (rows.find((row) => row.version === params[0]) as T) ?? null; if (sql.includes('event_id = ?')) { const row = rows.find((item) => item.event_id === params[0]); return row ? aliasRow(row) as T : null; } if (sql.includes('WHERE id = ?')) { const row = rows.find((item) => item.id === params[0]); return row ? aliasRow(row) as T : null; } return rows[0] ? aliasRow(rows[0]) as T : null; }
+  async getAll<T>(sql: string, params: SqlValue[] = []): Promise<T[]> { const table = /FROM (\w+)/i.exec(sql)?.[1]; const rows = table ? this.tables.get(table) ?? [] : []; if (sql.includes('revision_id = ?')) return rows.filter((row) => row.revision_id === params[0]).map(aliasRow) as T[]; return rows.map(aliasRow) as T[]; }
+  async transaction<T>(operation: () => Promise<T>): Promise<T> { this.backup = new Map([...this.tables].map(([key, value]) => [key, value.map((row) => ({ ...row }))])); try { const result = await operation(); this.backup = null; return result; } catch (error) { this.tables.clear(); for (const [key, value] of this.backup ?? []) this.tables.set(key, value); this.backup = null; throw error; } }
+  table(name: string): Row[] { return this.tables.get(name) ?? []; }
+}
+
+function aliasRow(row: Row): Row { const aliases: Record<string, string> = { goal_id: 'goalId', template_id: 'templateId', active_revision_id: 'activeRevisionId', recommendation_state: 'recommendationState', validation_fingerprint: 'validationFingerprint', plan_id: 'planId', parent_revision_id: 'parentRevisionId', engine_version: 'engineVersion', template_version: 'templateVersion', rule_version: 'ruleVersion', input_fingerprint: 'inputFingerprint', explanation_json: 'explanationJson', created_at: 'createdAt', logical_session_id: 'logicalSessionId', revision_id: 'revisionId', planned_date: 'plannedDate', prescription_json: 'prescriptionJson', previous_version_id: 'previousVersionId', session_id: 'sessionId', actual_date: 'actualDate', duration_seconds: 'durationSeconds', distance_meters: 'distanceMeters', intended_effort: 'intendedEffort', reported_effort: 'reportedEffort', reasons_json: 'reasonsJson', concern_flags_json: 'concernFlagsJson' }; return Object.fromEntries(Object.entries(row).map(([key, value]) => [aliases[key] ?? key, value])); }

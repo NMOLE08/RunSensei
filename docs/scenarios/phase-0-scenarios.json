@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AiSensei Phase 0 scenario definitions",
+  "description": "Non-prescriptive acceptance scenarios. Fixture numbers, where introduced later, must be demoOnly.",
+  "scenarios": [
+    {
+      "id": "missing-baseline",
+      "given": "The runner has not supplied recent longest-session information.",
+      "when": "Eligibility is evaluated.",
+      "then": ["Return insufficient_information.", "Name the missing input.", "Do not create a plan."]
+    },
+    {
+      "id": "unreviewed-content",
+      "given": "Only a demoOnly or draft candidate template is available.",
+      "when": "The runner requests activation.",
+      "then": ["Return no_reviewed_content.", "Block real-plan activation.", "Any development preview is visibly demo-only."]
+    },
+    {
+      "id": "fixed-date-incompatible",
+      "given": "A fixed date cannot satisfy the reviewed template duration or protected taper.",
+      "when": "A plan is generated.",
+      "then": ["Return goal_date_incompatible.", "Do not silently compress the plan or taper."]
+    },
+    {
+      "id": "availability-spacing-conflict",
+      "given": "No allowed weekly pattern fits the selected days, minute limits, and reviewed recovery spacing.",
+      "when": "A plan is generated.",
+      "then": ["Return availability_incompatible.", "Explain the failed constraint."]
+    },
+    {
+      "id": "ordinary-miss",
+      "given": "One ordinary session is explicitly marked missed.",
+      "when": "An adjustment is proposed.",
+      "then": ["Preserve the skip fact.", "Do not create catch-up work.", "Offer a move only if all reviewed constraints pass."]
+    },
+    {
+      "id": "missed-long-run",
+      "given": "A long session is explicitly missed.",
+      "when": "The next long session is assessed.",
+      "then": ["Use actual long-session history.", "Do not treat the missed session as completed."]
+    },
+    {
+      "id": "health-concern",
+      "given": "A reviewed concern flag is logged.",
+      "when": "Recommendations are revalidated.",
+      "then": ["Set health_hold.", "Suppress workout actions and reminders.", "Do not diagnose or clear the runner."]
+    },
+    {
+      "id": "stale-proposal",
+      "given": "A log or availability change occurs after a proposal was previewed.",
+      "when": "The runner applies the old proposal.",
+      "then": ["Reject it as stale.", "Refresh from the current fingerprint.", "Keep completed history unchanged."]
+    }
+  ]
+}

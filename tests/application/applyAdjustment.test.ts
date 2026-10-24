@@ -1,0 +1,17 @@
+import { applyAdjustment, keepCurrentPlan } from '@/application/applyAdjustment';
+import { migrate } from '@/data/migrations';
+import { TrainingRepository } from '@/data/repositories';
+import type { AdjustmentResult } from '@/domain/training/adjustment';
+import type { PlanSnapshot } from '@/domain/training/entities';
+import { MemoryDatabase } from '@/../tests/support/memoryDatabase';
+
+const now = '2026-10-24T00:00:00.000Z';
+const assignment = { id: 'assignment-1', logicalSessionId: 'session-1', revisionId: 'revision-1', plannedDate: '2026-11-02' as const, phase: 'base', role: 'easy', prescriptionJson: JSON.stringify({ week: 1, target: { durationSeconds: 1200 }, purpose: 'x', effortCue: 'x', steps: [], approvedAlternatives: [] }) };
+const base: PlanSnapshot = { plan: { id: 'plan-1', goalId: 'goal-1', templateId: 'reviewed:fixture', mode: 'real', activeRevisionId: 'revision-1', recommendationState: 'active', validationFingerprint: 'stored-input', createdAt: now }, revision: { id: 'revision-1', planId: 'plan-1', parentRevisionId: null, engineVersion: '1', templateVersion: '1', ruleVersion: '1', inputFingerprint: 'stored-input', explanationJson: '{}', createdAt: now }, assignments: [assignment] };
+const proposal: AdjustmentResult = { kind: 'proposal', reasonCodes: ['long_run_reassessed'], before: [assignment], after: [{ ...assignment, prescriptionJson: assignment.prescriptionJson }], constraints: [], explanation: 'valid', targetDateEffect: null, keepCurrentAllowed: true, inputFingerprint: 'preview-input' };
+
+describe('adjustment activation boundary', () => {
+  it('is idempotent and moves the pointer only once', async () => { const db = new MemoryDatabase(); await migrate(db, now); const repo = new TrainingRepository(db); await repo.savePlan(base.plan); await repo.saveLogicalSession({ id: 'session-1', planId: base.plan.id, stableKey: 'x', createdAt: now }); await repo.applyRevision(base, { id: 'initial', actionType: 'initial', relatedIdsJson: '[]', occurredAt: now }); const first = await applyAdjustment(repo, base, proposal, 'preview-input', now); const second = await applyAdjustment(repo, base, proposal, 'preview-input', now); expect(first.applied).toBe(true); expect(second.applied).toBe(false); expect(db.table('plan_revisions')).toHaveLength(2); });
+  it('rejects stale inputs and leaves the old active pointer intact on failure', async () => { const db = new MemoryDatabase(); await migrate(db, now); const repo = new TrainingRepository(db); await repo.savePlan(base.plan); await repo.saveLogicalSession({ id: 'session-1', planId: base.plan.id, stableKey: 'x', createdAt: now }); await repo.applyRevision(base, { id: 'initial', actionType: 'initial', relatedIdsJson: '[]', occurredAt: now }); await expect(applyAdjustment(repo, base, proposal, 'newer-input', now)).rejects.toThrow('stale'); expect(db.table('plans')[0].active_revision_id).toBe('revision-1'); db.failOn = 'session_assignments'; await expect(applyAdjustment(repo, base, proposal, 'preview-input', now)).rejects.toThrow('Injected failure'); expect(db.table('plans')[0].active_revision_id).toBe('revision-1'); });
+  it('only permits keeping a currently valid recommendation', () => { expect(() => keepCurrentPlan(base, proposal, 'preview-input')).not.toThrow(); expect(() => keepCurrentPlan({ ...base, plan: { ...base.plan, recommendationState: 'needs_review' } }, proposal, 'preview-input')).toThrow('unavailable'); });
+});

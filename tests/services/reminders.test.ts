@@ -1,0 +1,10 @@
+import { reconcileReminders, type LocalNotifications } from '@/services/reminders/reconcile';
+import type { SessionAssignment } from '@/domain/training/entities';
+
+const session: SessionAssignment = { id: 'assignment-1', logicalSessionId: 'session-1', revisionId: 'revision-1', plannedDate: '2026-10-25', phase: 'base', role: 'easy', prescriptionJson: '{}' };
+const fake = (granted = true) => { const scheduled: string[] = []; const cancelled: string[] = []; const api: LocalNotifications = { requestPermissionsAsync: async () => ({ granted }), schedule: async () => { const id = `native-${scheduled.length}`; scheduled.push(id); return id; }, cancel: async (id) => { cancelled.push(id); } }; return { api, scheduled, cancelled }; };
+
+describe('local reminder reconciliation', () => {
+  it('is idempotent and cancels reminders when recommendations become incompatible', async () => { const first = fake(); const scheduled = await reconcileReminders(first.api, { remindersEnabled: true, recommendationState: 'active', sessions: [session], existing: [], timezone: 'Asia/Calcutta', today: '2026-10-24' }); expect(scheduled.scheduled).toHaveLength(1); const second = fake(); const repeated = await reconcileReminders(second.api, { remindersEnabled: true, recommendationState: 'active', sessions: [session], existing: scheduled.records, timezone: 'Asia/Calcutta', today: '2026-10-24' }); expect(repeated.scheduled).toHaveLength(0); const suppressed = await reconcileReminders(second.api, { remindersEnabled: true, recommendationState: 'needs_review', sessions: [session], existing: repeated.records, timezone: 'Asia/Calcutta', today: '2026-10-24' }); expect(suppressed.cancelled).toHaveLength(1); expect(second.cancelled).toEqual(['native-0']); });
+  it('does not block planning or create records when permission is denied', async () => { const denied = fake(false); const result = await reconcileReminders(denied.api, { remindersEnabled: true, recommendationState: 'active', sessions: [session], existing: [], timezone: 'Asia/Calcutta', today: '2026-10-24' }); expect(result.permissionDenied).toBe(true); expect(result.records).toEqual([]); });
+});

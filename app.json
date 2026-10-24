@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "AiSensei",
+    "slug": "aisensei",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "aisensei",
+    "android": {
+      "package": "com.aisensei.app"
+    },
+    "ios": {
+      "bundleIdentifier": "com.aisensei.app"
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-font",
+      "expo-sqlite",
+      "expo-notifications"
+    ]
+  }
+}

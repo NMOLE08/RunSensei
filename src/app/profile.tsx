@@ -1,0 +1,13 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useEffect, useState } from 'react';
+import { AppText, Button, Card, Field, Screen } from '@/design/components';
+import { getLocalAccount, saveLocalAccount } from '@/application/localAccount';
+import { supabase } from '@/services/auth/supabase';
+
+const formatDate = (value: string) => { const digits = value.replace(/\D/g, '').slice(0, 8); return [digits.slice(0, 4), digits.slice(4, 6), digits.slice(6, 8)].filter(Boolean).join('-'); };
+export default function ProfileScreen() {
+  const [id, setId] = useState<string | null>(null); const [email, setEmail] = useState(''); const [name, setName] = useState(''); const [phone, setPhone] = useState(''); const [dob, setDob] = useState(''); const [calendar, setCalendar] = useState(false); const [message, setMessage] = useState<string | null>(null);
+  useEffect(() => { supabase.auth.getUser().then(async ({ data }) => { const accountId = data.user?.id ?? 'demo-local'; const saved = await getLocalAccount(accountId); if (!data.user && !saved) return; setId(accountId); setEmail(data.user?.email ?? saved?.email ?? ''); setName(saved?.displayName ?? ''); setPhone(saved?.phone ?? ''); setDob(saved?.dateOfBirth ?? ''); }); }, []);
+  const save = async () => { if (!id) return setMessage('Sign in before saving a profile.'); await saveLocalAccount({ id, email, displayName: name || null, phone: phone || null, dateOfBirth: dob || null }); if (id !== 'demo-local') await supabase.auth.updateUser({ data: { display_name: name || null, phone: phone || null, date_of_birth: dob || null } }); setMessage(id === 'demo-local' ? 'Profile saved for this local demo.' : 'Profile saved on this device and linked to your account.'); };
+  return <Screen><AppText variant="meta">PROFILE</AppText><AppText variant="title">Your details</AppText><Card><Field label="Name" onChangeText={setName} value={name} /><Field autoCapitalize="none" keyboardType="email-address" label="Email" onChangeText={setEmail} value={email} /><Field keyboardType="phone-pad" label="Phone number" onChangeText={setPhone} value={phone} /><Field keyboardType="number-pad" label="Date of birth" onChangeText={(value) => setDob(formatDate(value))} placeholder="YYYY-MM-DD" value={dob} /><Button label="Choose date from calendar" onPress={() => setCalendar(true)} tone="secondary" />{calendar && <DateTimePicker value={/^\d{4}-\d{2}-\d{2}$/.test(dob) ? new Date(`${dob}T12:00:00`) : new Date()} mode="date" onChange={(_, value) => { setCalendar(false); if (value) setDob(value.toISOString().slice(0, 10)); }} />}</Card><Button label="Save profile" onPress={() => { void save(); }} />{message && <AppText accessibilityLiveRegion="polite">{message}</AppText>}</Screen>;
+}

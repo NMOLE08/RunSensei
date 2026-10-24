@@ -1,0 +1,11 @@
+import { AppText, Card } from '@/design/components';
+import type { AdjustmentResult } from '@/domain/training/adjustment';
+import { decodePrescription, formatTarget } from '@/domain/training/prescription';
+import type { UnitSystem } from '@/domain/training/entities';
+
+export function AdjustmentPreview({ result, units }: { result: AdjustmentResult; units: UnitSystem }) {
+  if (result.kind === 'unsupported') return <Card><AppText variant="meta">REVIEW REQUIRED</AppText><AppText variant="title">Automatic adjustment unavailable</AppText><AppText>{result.explanation}</AppText><AppText variant="meta">REASONS / {result.reasonCodes.join(', ')}</AppText>{result.targetDateEffect && <AppText>Goal effect: {result.targetDateEffect}</AppText>}<AppText>Pause or review options are required before recommendations resume.</AppText></Card>;
+  const changed = result.after.filter((after) => result.before.some((before) => before.id === after.id && before.prescriptionJson !== after.prescriptionJson));
+  return <Card><AppText variant="meta">BEFORE / AFTER PREVIEW</AppText><AppText variant="title">{result.kind === 'proposal' ? 'Review this adjustment' : 'No schedule change'}</AppText><AppText>{result.explanation}</AppText><AppText variant="meta">REASONS / {result.reasonCodes.join(', ')}</AppText>{changed.map((after) => { const before = result.before.find((item) => item.id === after.id)!; return <Card key={after.id}><AppText variant="meta">{after.plannedDate} / {after.role.toUpperCase()}</AppText><AppText>Before: {target(before.prescriptionJson, units)}</AppText><AppText>After: {target(after.prescriptionJson, units)}</AppText></Card>; })}<AppText variant="meta">CONSTRAINTS / {result.constraints.length ? result.constraints.join(', ') : 'PASSED'}</AppText>{result.targetDateEffect && <AppText>Goal effect: {result.targetDateEffect}</AppText>}<AppText>{result.keepCurrentAllowed ? 'Keep current plan is available because it passed revalidation.' : 'Keep current plan is unavailable; review or pause is required.'}</AppText></Card>;
+}
+function target(value: string, units: UnitSystem): string { const prescription = decodePrescription(value); return prescription ? formatTarget(prescription, units) ?? 'No supported target' : 'Prescription unavailable'; }

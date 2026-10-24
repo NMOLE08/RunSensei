@@ -1,0 +1,42 @@
+{
+  "name": "aisensei",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --runInBand",
+    "doctor": "expo-doctor"
+  },
+  "dependencies": {
+    "@react-native-community/datetimepicker": "^9.2.2",
+    "@supabase/supabase-js": "^2.118.0",
+    "expo": "~58.0.17",
+    "expo-auth-session": "^58.0.14",
+    "expo-constants": "~58.0.13",
+    "expo-font": "~58.0.9",
+    "expo-linking": "~58.0.14",
+    "expo-notifications": "~58.1.6",
+    "expo-router": "~58.0.25",
+    "expo-sqlite": "~58.0.13",
+    "expo-status-bar": "~58.0.4",
+    "expo-web-browser": "^58.0.6",
+    "react": "19.3.0",
+    "react-native": "0.88.0",
+    "react-native-safe-area-context": "~5.10.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/react": "^19.2.0",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "^58.0.4",
+    "expo-doctor": "^1.17.14",
+    "jest": "^30.5.2",
+    "jest-expo": "~58.0.12",
+    "typescript": "~6.0.3"
+  }
+}
