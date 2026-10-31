@@ -7,7 +7,7 @@ export type PlanMode = 'demo' | 'real';
 export type RecommendationState = 'active' | 'needs_review' | 'health_hold';
 export type ResolutionKind = 'completed' | 'partial' | 'skipped' | 'different_activity';
 
-export interface RunnerProfile { id: Id; units: UnitSystem; trainingTimezone: string; baselineJson: string; version: number; createdAt: UtcInstant; updatedAt: UtcInstant; }
+export interface RunnerProfile { id: Id; units: UnitSystem; trainingTimezone: string; baselineJson: string; recentWeeklyVolumeValue?: number | null; recentWeeklyVolumeUnit?: 'minutes' | null; baselineLookbackDays?: number | null; recentLongestSessionSeconds?: number | null; recentLongestSessionDate?: DateOnly | null; comfortableDurationSeconds?: number | null; interruptionStatus?: 'none' | 'sustained' | 'unknown' | null; version: number; createdAt: UtcInstant; updatedAt: UtcInstant; }
 export interface RaceGoal { id: Id; profileId: Id; mode: 'fixed_date' | 'flexible'; distanceMeters: number; raceDate: DateOnly | null; startDate: DateOnly; version: number; createdAt: UtcInstant; }
 export interface Availability { id: Id; profileId: Id; weekdayLimitsJson: string; preferredLongRunDay: number | null; exceptionsJson: string; version: number; createdAt: UtcInstant; }
 export interface Plan { id: Id; goalId: Id; templateId: Id; mode: PlanMode; activeRevisionId: Id | null; recommendationState: RecommendationState; validationFingerprint: string; createdAt: UtcInstant; }

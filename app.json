@@ -20,7 +20,9 @@
       "expo-status-bar",
       "expo-font",
       "expo-sqlite",
-      "expo-notifications"
+      "expo-notifications",
+      ["llama.rn", { "enableEntitlements": false, "forceCxx20": true, "enableOpenCLAndHexagon": false }],
+      ["expo-location", { "locationWhenInUsePermission": "Allow AiSensei to record your location during a workout." }]
     ]
   }
 }

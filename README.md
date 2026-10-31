@@ -1,6 +1,8 @@
 # AiSensei
 
-AiSensei is an offline-first, first-half-marathon completion planner. Phases 9–10 add constrained immutable revision activation, local reminder reconciliation, and local data controls. The only bundled training content remains synthetic demo content; reviewed original content is still required for real coaching release.
+The optional on-device Qwen3.5 2B migration is documented in [docs/qwen-on-device-progress.md](docs/qwen-on-device-progress.md). The model runs through `llama.rn` after a user-initiated download; GPS tracking remains independent. Cloud Gemini generation is disabled and retained temporarily as rollback evidence.
+
+AiSensei is an offline-first running-plan prototype with a persisted workout-feedback and immutable plan-review loop. The only bundled training content remains synthetic demo content; reviewed original content is still required for real coaching release.
 
 ## Selected stack
 
@@ -56,3 +58,10 @@ iOS builds require macOS with Xcode and CocoaPods. On that machine, install proj
 The Phase 2 component system lives in `src/design`. Local Inter, IBM Plex Mono, and Pixelify Sans assets—and their OFL notices—are kept in `assets/fonts/`. Fixture content is visibly labelled and is not a personalised recommendation.
 
 See [the implementation plan](docs/half-marathon-implementation-plan.md) and the Phase 0 contracts under `docs/` for project scope and content-release requirements.
+
+See [workout feedback and personalization](docs/feedback-loop-and-personalization.md) for the outcome → reassessment → review → activation flow, schema migration 8, unsupported states, fixture limitations, manual verification, and future strength/nutrition/AI integration boundaries.
+# Google sign-in setup
+
+Google sign-in requires the Google provider to be enabled in Supabase Authentication. Configure a Google OAuth web client in Google Cloud, add `https://simzbjtoyxvdswasccid.supabase.co/auth/v1/callback` as its authorized redirect URI, and enter its client ID and secret into Supabase's Google provider settings. Add `aisensei://auth/callback` to Supabase Authentication's redirect URL allow list. Google Cloud consent-screen publishing or test-user restrictions may also apply. Keep the client secret in Supabase, never in the app or repository.
+
+On 2026-10-26 the project's public authentication settings initially reported the Google provider disabled; a later check confirmed it enabled. The redirect allow list and Google Cloud configuration have not been independently verified. An updated release APK is required before testing. The callback accepts Supabase implicit token redirects and PKCE code redirects; neither has been verified end to end on a physical phone.

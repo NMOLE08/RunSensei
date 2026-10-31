@@ -9,6 +9,7 @@ export type EligibilityCode = 'eligible' | 'insufficient_information' | 'needs_b
 export interface OnboardingDraft {
   id: 'current';
   weeklyRunningMinutes: string;
+  baselineLookbackDays: string;
   longestSessionMinutes: string;
   longestSessionDate: string;
   comfortableDurationMinutes: string;
@@ -30,5 +31,5 @@ export interface OnboardingDraft {
 
 export interface EligibilityResult { code: EligibilityCode; title: string; message: string; fields: string[]; demoOnly: boolean; }
 export const weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
-export const emptyDraft = (timezone: string): OnboardingDraft => ({ id: 'current', weeklyRunningMinutes: '', longestSessionMinutes: '', longestSessionDate: '', comfortableDurationMinutes: '', recentInterruption: 'unknown', entryRequirementStatus: 'unknown', concernFlag: false, goalMode: 'fixed_date', goalDistance: '21097', raceDate: '', startDate: '', trainingDays: [], minuteLimits: {}, preferredLongRunDay: null, unavailableDates: '', units: 'metric', timezone, updatedAt: '' });
+export const emptyDraft = (timezone: string): OnboardingDraft => ({ id: 'current', weeklyRunningMinutes: '', baselineLookbackDays: '', longestSessionMinutes: '', longestSessionDate: '', comfortableDurationMinutes: '', recentInterruption: 'unknown', entryRequirementStatus: 'unknown', concernFlag: false, goalMode: 'fixed_date', goalDistance: '21097', raceDate: '', startDate: '', trainingDays: [], minuteLimits: {}, preferredLongRunDay: null, unavailableDates: '', units: 'metric', timezone, updatedAt: '' });
 export type DraftDate = DateOnly;

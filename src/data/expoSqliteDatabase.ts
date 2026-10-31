@@ -7,9 +7,16 @@ export class ExpoSqliteDatabase implements SqlDatabase {
   getFirst<T>(sql: string, params: SqlValue[] = []): Promise<T | null> { return this.database.getFirstAsync<T>(sql, ...params); }
   getAll<T>(sql: string, params: SqlValue[] = []): Promise<T[]> { return this.database.getAllAsync<T>(sql, ...params); }
   async transaction<T>(operation: () => Promise<T>): Promise<T> {
-    let result: T | undefined;
-    await this.database.withTransactionAsync(async () => { result = await operation(); });
-    if (result === undefined) throw new Error('Transaction completed without a result');
+    // A transaction callback is allowed to return void. In particular, repository
+    // write operations deliberately return no value after completing their writes.
+    // Track whether the callback ran instead of using `undefined` as an error signal.
+    let completed = false;
+    let result!: T;
+    await this.database.withTransactionAsync(async () => {
+      result = await operation();
+      completed = true;
+    });
+    if (!completed) throw new Error('Transaction did not run');
     return result;
   }
 }

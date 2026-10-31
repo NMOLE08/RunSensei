@@ -1,4 +1,4 @@
-import { migrate } from '@/data/migrations';
+import { migrate, migrations } from '@/data/migrations';
 import { TrainingRepository } from '@/data/repositories';
 import { activatePlanRevision } from '@/application/activatePlanRevision';
 import type { ActivityLog, AuditEvent, Plan, PlanRevision, SessionAssignment } from '@/domain/training/entities';
@@ -16,12 +16,15 @@ describe('SQLite persistence boundary', () => {
     const repository = new TrainingRepository(database); await repository.savePlan(plan); await repository.saveLogicalSession({ id: 'session-1', planId: plan.id, stableKey: 'week-1-easy', createdAt: now });
     await activatePlanRevision(repository, { plan, revision, assignments: [assignment] }, audit);
     const reopened = await new TrainingRepository(database).getPlanSnapshot(plan.id);
-    expect(reopened?.revision.id).toBe('revision-1'); expect(reopened?.assignments[0].plannedDate).toBe('2026-10-25'); expect(database.table('schema_migrations')).toHaveLength(7);
+    expect(reopened?.revision.id).toBe('revision-1'); expect(reopened?.assignments[0].plannedDate).toBe('2026-10-25'); expect(database.table('schema_migrations')).toHaveLength(migrations.length);
   });
 
   it('keeps an existing plan through a later migration', async () => {
-    const database = new MemoryDatabase(); await migrate(database, now); const repository = new TrainingRepository(database); await repository.savePlan(plan); await migrate(database, '2026-10-25T00:00:00.000Z');
-    expect(database.table('plans')[0].id).toBe(plan.id); expect(database.table('schema_migrations')).toHaveLength(7);
+    const database = new MemoryDatabase(); for (const migration of migrations.filter((value) => value.version < 9)) { for (const statement of migration.statements) await database.run(statement); await database.run('INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)', [migration.version, now]); } const repository = new TrainingRepository(database); await repository.savePlan(plan); await migrate(database, '2026-10-25T00:00:00.000Z');
+    expect(database.table('plans')[0].id).toBe(plan.id);
+    expect(database.table('schema_migrations')).toHaveLength(migrations.length);
+    expect(database.table('ai_model_installations')).toEqual([]);
+    expect(database.table('ai_conversation_state')).toEqual([]);
   });
 
   it('rolls back a failed revision write without moving the active pointer', async () => {

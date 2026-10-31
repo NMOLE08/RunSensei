@@ -38,7 +38,7 @@ Eligibility is template selection plus template-defined entry checks, not a heal
 | --- | --- | --- |
 | `eligible` | A reviewed, supported template and schedule pattern meet all declared constraints. | Preview assumptions and allow activation. |
 | `insufficient_information` | A required baseline, goal, or availability input is absent or invalid. | Explain the missing input. |
-| `needs_base_build` | The declared baseline does not meet the approved template's entry requirements. | Explain that a half-marathon plan is not offered yet; offer no invented bridge plan. |
+| `needs_base_build` | Reserved for a future reviewed policy that explicitly identifies a supported foundation pathway. It is not triggered by a manual “I match the template” answer. | Offer the authored foundation pathway when one exists; otherwise explain the unsupported content gap. |
 | `goal_date_incompatible` | A fixed date cannot fit the reviewed template, protected taper, or other authored date rules. | Ask for a different date/start choice or an approved alternative. |
 | `availability_incompatible` | No template-allowed weekly pattern fits days, minutes, exceptions, long-run preference, and recovery spacing. | Ask for availability changes or a supported variant. |
 | `unsupported_goal` | Distance, frequency, cohort, or goal type is outside the release's reviewed scope. | State the supported scope. |

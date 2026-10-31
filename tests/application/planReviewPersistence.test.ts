@@ -1,0 +1,14 @@
+import { migrate } from '@/data/migrations';
+import { TrainingRepository } from '@/data/repositories';
+import type { AdjustmentProposal, PlanSnapshot } from '@/domain/training/entities';
+import { MemoryDatabase } from '@/../tests/support/memoryDatabase';
+
+const now = '2026-10-24T00:00:00.000Z';
+const assignment = { id: 'a-1', logicalSessionId: 's-1', revisionId: 'r-1', plannedDate: '2026-10-26' as const, phase: 'fixture', role: 'easy', prescriptionJson: '{}' };
+const snapshot = (state: 'needs_review' | 'health_hold'): PlanSnapshot => ({ plan: { id: 'p-1', goalId: 'g-1', templateId: 'demo:test', mode: 'demo', activeRevisionId: 'r-1', recommendationState: state, validationFingerprint: 'invalidated:event-1', createdAt: now }, revision: { id: 'r-1', planId: 'p-1', parentRevisionId: null, engineVersion: '1', templateVersion: '1', ruleVersion: '1', inputFingerprint: 'old', explanationJson: '{}', createdAt: now }, assignments: [assignment] });
+const proposal: AdjustmentProposal = { id: 'review:p-1:new', planId: 'p-1', baseRevisionId: 'r-1', inputFingerprint: 'new', reasonsJson: '["no_change_needed"]', diffJson: '{}', constraintsJson: '[]', targetDateEffect: null, status: 'pending', createdAt: now };
+
+describe('validated no-change persistence', () => {
+  it('reactivates an unchanged plan atomically and is stale on a repeated confirmation', async () => { const db = new MemoryDatabase(); await migrate(db, now); const repo = new TrainingRepository(db); await repo.savePlan(snapshot('needs_review').plan); await repo.saveProposal(proposal); await repo.markPlanValidated({ planId: 'p-1', expectedRevisionId: 'r-1', expectedFingerprint: 'invalidated:event-1', validatedFingerprint: 'new', proposalId: proposal.id, event: { id: 'confirmed-1', actionType: 'plan_revalidated', relatedIdsJson: '[]', occurredAt: now } }); expect(db.table('plans')[0].recommendation_state).toBe('active'); expect(db.table('plans')[0].validation_fingerprint).toBe('new'); await expect(repo.markPlanValidated({ planId: 'p-1', expectedRevisionId: 'r-1', expectedFingerprint: 'invalidated:event-1', validatedFingerprint: 'new', proposalId: proposal.id, event: { id: 'confirmed-2', actionType: 'plan_revalidated', relatedIdsJson: '[]', occurredAt: now } })).rejects.toThrow('stale'); });
+  it('does not let normal reassessment clear a health hold', async () => { const db = new MemoryDatabase(); await migrate(db, now); const repo = new TrainingRepository(db); await repo.savePlan(snapshot('health_hold').plan); await repo.saveProposal(proposal); await expect(repo.markPlanValidated({ planId: 'p-1', expectedRevisionId: 'r-1', expectedFingerprint: 'invalidated:event-1', validatedFingerprint: 'new', proposalId: proposal.id, event: { id: 'confirmed', actionType: 'plan_revalidated', relatedIdsJson: '[]', occurredAt: now } })).rejects.toThrow('health hold'); expect(db.table('plans')[0].recommendation_state).toBe('health_hold'); });
+});

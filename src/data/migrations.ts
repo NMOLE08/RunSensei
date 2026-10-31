@@ -24,6 +24,39 @@ export const migrations = [
   { version: 5, statements: [`CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`] },
   { version: 6, statements: [`CREATE TABLE IF NOT EXISTS local_accounts (id TEXT PRIMARY KEY, email TEXT NOT NULL, display_name TEXT, created_at TEXT NOT NULL)`] },
   { version: 7, statements: [`ALTER TABLE local_accounts ADD COLUMN phone TEXT`, `ALTER TABLE local_accounts ADD COLUMN date_of_birth TEXT`] },
+  { version: 8, statements: [
+    `ALTER TABLE runner_profiles ADD COLUMN recent_weekly_volume_value INTEGER`,
+    `ALTER TABLE runner_profiles ADD COLUMN recent_weekly_volume_unit TEXT`,
+    `ALTER TABLE runner_profiles ADD COLUMN baseline_lookback_days INTEGER`,
+    `ALTER TABLE runner_profiles ADD COLUMN recent_longest_session_seconds INTEGER`,
+    `ALTER TABLE runner_profiles ADD COLUMN recent_longest_session_date TEXT`,
+    `ALTER TABLE runner_profiles ADD COLUMN comfortable_duration_seconds INTEGER`,
+    `ALTER TABLE runner_profiles ADD COLUMN interruption_status TEXT`,
+    `CREATE TABLE IF NOT EXISTS plan_review_state (plan_id TEXT PRIMARY KEY, proposal_id TEXT, result_json TEXT NOT NULL, input_fingerprint TEXT NOT NULL, reminder_error TEXT, updated_at TEXT NOT NULL)`,
+  ] },
+  { version: 9, statements: [
+    `CREATE TABLE IF NOT EXISTS tracking_sessions (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, planned_session_id TEXT, revision_id TEXT, prescription_json TEXT, mode TEXT NOT NULL, state TEXT NOT NULL, started_at_ms INTEGER, ended_at_ms INTEGER, checkpoint_at_ms INTEGER NOT NULL, segments_json TEXT NOT NULL, distance_meters REAL, metric_version INTEGER NOT NULL, feedback_json TEXT, status_reason TEXT)`,
+    `CREATE TABLE IF NOT EXISTS tracking_points (id TEXT PRIMARY KEY, session_id TEXT NOT NULL, timestamp_ms INTEGER NOT NULL, latitude REAL NOT NULL, longitude REAL NOT NULL, accuracy_meters REAL NOT NULL, segment INTEGER NOT NULL, UNIQUE(session_id, timestamp_ms))`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_one_active_tracker ON tracking_sessions ((1)) WHERE state IN ('preparing','recording','paused','finishing','interrupted')`,
+    `CREATE INDEX IF NOT EXISTS idx_tracking_owner ON tracking_sessions(owner_id, started_at_ms)`,
+  ] },
+  // Repair installations whose migration history already includes version 3
+  // but whose onboarding table is missing. Never replace an existing draft.
+  { version: 10, statements: [`CREATE TABLE IF NOT EXISTS onboarding_drafts (id TEXT PRIMARY KEY, payload_json TEXT NOT NULL, updated_at TEXT NOT NULL)`] },
+  { version: 11, statements: [
+    `ALTER TABLE runner_profiles ADD COLUMN owner_id TEXT`,
+    `ALTER TABLE plans ADD COLUMN owner_id TEXT`,
+    `ALTER TABLE activity_logs ADD COLUMN owner_id TEXT`,
+    `ALTER TABLE reminder_records ADD COLUMN owner_id TEXT`,
+    `CREATE INDEX IF NOT EXISTS idx_plans_owner_active ON plans(owner_id, active_revision_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_activity_owner_date ON activity_logs(owner_id, actual_date)`,
+    `CREATE INDEX IF NOT EXISTS idx_reminders_owner ON reminder_records(owner_id)`,
+  ] },
+  { version: 12, statements: [
+    `CREATE TABLE IF NOT EXISTS ai_model_installations (model_id TEXT PRIMARY KEY, version TEXT NOT NULL, sha256 TEXT NOT NULL, byte_size INTEGER NOT NULL, local_path TEXT, state TEXT NOT NULL, verified_at TEXT, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS ai_conversation_state (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, kind TEXT NOT NULL, state_json TEXT NOT NULL, model_id TEXT NOT NULL, prompt_version TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+    `CREATE INDEX IF NOT EXISTS idx_ai_conversation_owner ON ai_conversation_state(owner_id, updated_at)`,
+  ] },
 ];
 
 let migrationQueue: Promise<void> = Promise.resolve();

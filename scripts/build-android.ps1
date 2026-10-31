@@ -1,6 +1,8 @@
 param(
   [switch]$Install,
-  [string]$DriveLetter = 'R'
+  [string]$DriveLetter = 'R',
+  [ValidateSet('x86_64', 'arm64-v8a')]
+  [string]$Architecture = 'x86_64'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -57,7 +59,7 @@ $env:Path = "$(Split-Path $node.Source -Parent);$(Split-Path $pnpm.Source -Paren
 $shortAndroidDir = "$driveName`:\android"
 Push-Location $shortAndroidDir
 try {
-  & '.\gradlew.bat' app:assembleDebug -x lint -x test --configure-on-demand --build-cache -PreactNativeDevServerPort=8081 -PreactNativeArchitectures=x86_64 --console=plain
+  & '.\gradlew.bat' app:assembleDebug -x lint -x test --configure-on-demand --build-cache -PreactNativeDevServerPort=8081 "-PreactNativeArchitectures=$Architecture" --console=plain
   if ($LASTEXITCODE -ne 0) { throw 'Android build failed.' }
 } finally {
   Pop-Location
