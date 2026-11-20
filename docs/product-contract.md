@@ -1,23 +1,26 @@
-# AiSensei product contract (Phase 0)
+# RunSensei product contract (rolling-week scope)
+
+> Phase 0 product direction, current branding, mentor roles, and the multi-distance rollout are documented in [product-direction.md](product-direction.md). This historical/technical contract retains legacy names and policy references where they are part of compatibility or provenance.
 
 ## Release slice
 
-AiSensei is an offline, adult, first-half-marathon **completion planner**. Its first release supports one candidate pathway: a 16-week, three-running-days-per-week half-marathon template. This is a content brief, not approved training content and not a promise that 16 weeks, or having run 5K, makes a runner eligible.
+RunSensei combines an offline-capable GPS activity recorder with an opt-in rolling coaching framework. A long-term goal may span multiple months, but the planner may generate, preview, accept, and activate only **one consecutive seven-day window** at a time. Future phase state may be retained; future workout prescriptions must not be generated ahead of that window.
 
-The supported loop is: collect a starting point → assess eligibility → preview and activate a plan → view today's action → record an actual result → resolve an unlogged session → review a supported future-plan adjustment → accept an immutable new plan revision.
+The supported loop is: collect a source-tagged starting point → assess goal/content compatibility → preview exactly seven dates → accept an immutable revision → view today's action → record actual activity separately → resolve unlogged sessions → review a supported future-only change → explicitly accept or reject it → generate the next week only after the current week is reviewed.
 
-The release intentionally excludes GPS, watch/activity imports, runtime AI or chat, cloud accounts, payments, social features, meal plans, and full-marathon plans. It must work offline after installation. Local-only storage does not imply encrypted storage or immunity from device backups.
+The installed content remains synthetic demo content. There is no reviewed production training template or numerical policy, so real coaching activation remains blocked. GPS recording and optional Supabase identity already exist and must remain usable without a coaching plan. Strava-derived data is excluded from planning/model input unless separate provider permission is documented. The local Qwen runtime is scaffolding until a compatible model is loaded and verified on a physical device; deterministic validation remains authoritative. Local-only storage does not imply encrypted storage or immunity from device backups.
 
 ## Intended cohort and required inputs
 
-The intended cohort is adults seeking a completion-focused half-marathon pathway who can supply the baseline information required by an approved template. The application does not assess medical readiness or provide clearance.
+The eventual intended cohorts are defined by independently reviewed, versioned content. Current 5K, 10K, and half-marathon completion structures are development fixtures only. Marathon, start-running, speed-improvement, and other unsupported goals must return an explicit unsupported/content-gap state rather than borrow another goal's template. The application does not assess medical readiness or provide clearance.
 
 Required inputs before eligibility can be evaluated:
 
 - Recent running history over the template-defined lookback period: weekly running amount, recent longest session and its date, and comfortable running duration.
-- Training frequency (this release requires the candidate three-run variant), recent interruption details, and any reviewed screening answers.
-- Goal mode: a fixed race date or a flexible half-marathon-distance goal; planned start date; display unit; and explicit IANA training timezone.
+- Four source-tagged recent weeks (values may remain explicitly unknown), a current repeatable longest session, comfortable running duration, running experience, recent interruption details, and screening answers.
+- Goal kind and event, current performance separately from aspirational target performance, fixed/flexible timing, planned start date, display unit, and explicit IANA training timezone.
 - Availability: runnable days, whole-session minute limits, preferred long-run day, and known unavailable dates.
+- Training volume/difficulty preferences and optional caps. Preferences select only among authored choices and cannot override safety or policy constraints.
 
 An optional timed effort may be recorded only as a user-provided fact; it must not force a maximal test or imply race pace. Planned work uses time and effort cues unless an approved template specifically authorizes distance.
 
@@ -36,7 +39,7 @@ Eligibility is template selection plus template-defined entry checks, not a heal
 
 | Result | When returned | User-facing direction |
 | --- | --- | --- |
-| `eligible` | A reviewed, supported template and schedule pattern meet all declared constraints. | Preview assumptions and allow activation. |
+| `eligible` | In production, a reviewed supported template and schedule pattern meet all constraints. In development, this code may identify a visibly labelled compatible demo fixture. | Preview exactly seven dates and allow only the matching activation mode. |
 | `insufficient_information` | A required baseline, goal, or availability input is absent or invalid. | Explain the missing input. |
 | `needs_base_build` | Reserved for a future reviewed policy that explicitly identifies a supported foundation pathway. It is not triggered by a manual “I match the template” answer. | Offer the authored foundation pathway when one exists; otherwise explain the unsupported content gap. |
 | `goal_date_incompatible` | A fixed date cannot fit the reviewed template, protected taper, or other authored date rules. | Ask for a different date/start choice or an approved alternative. |

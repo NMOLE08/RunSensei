@@ -1,0 +1,13 @@
+import { buildPersonalizedWeeklyInput, generatePersonalizedWeekOnDevice } from '@/application/personalizedWeeklyPlanner';
+import { emptyDraft } from '@/domain/onboarding/types';
+import type { PersonalizedTrainingPolicy } from '@/ai/schemas/personalizedWeeklyPlanSchema';
+import type { PolicyReviewPackage } from '@/domain/training/policyReviewCatalog';
+
+const policy: PersonalizedTrainingPolicy = { id: 'reviewed-test', version: 'test-v1', reviewed: true, reviewer: 'Test reviewer', reviewDate: '2026-10-01', maxRunDays: 3, maxRunMinutes: 120, minimumRecoveryDays: 1, maxLongRuns: 1, paceTargetsAllowed: false, workoutRules: [] };
+const policyReviewPackage: PolicyReviewPackage = { schemaVersion: 'training-policy-review-package-v1', id: policy.id, version: policy.version, family: 'first_5k', lifecycle: 'reviewed', author: 'Test author', rightsNotes: 'Test fixture only.', engineCompatibility: 'local-ai-week-v1', evidence: [{ id: 'test-source', title: 'Test source', url: 'https://example.invalid/test', accessedOn: '2026-10-01', use: 'review_input', reuseStatus: 'original_authored', notes: 'Test fixture only.' }], numericalRuleCandidates: [{ id: 'test-rule', topic: 'baseline', proposedFormula: 'Test-only rule.', applicablePopulation: 'Test fixture.', sourceEvidenceIds: ['test-source'], limitations: 'Not production content.', implementationRationale: 'Exercises the binding gate.', reviewStatus: 'reviewed' }], reviewer: 'Test reviewer', reviewDate: '2026-10-01', approvalScope: 'Test fixture only', activation: 'eligible_after_release_review' };
+const request = () => { const draft = emptyDraft('Asia/Kolkata'); draft.goalEvent = '5k'; draft.goalDistance = '5000'; draft.trainingDays = [0, 2, 5]; draft.minuteLimits = { 0: '40', 2: '40', 5: '60' }; draft.recentInterruption = 'none'; return { draft, policy, policyReviewPackage, weekStartDate: '2026-11-02', phase: 'base_build', weekNumber: 1, priorOutcomes: [] }; };
+
+describe('personalized weekly application coordinator', () => {
+  test('retires Qwen as an initial-plan generator', async () => { const generator = { generate: jest.fn() }; await expect(generatePersonalizedWeekOnDevice(request(), { generator: generator as never, nativeRuns: [] })).rejects.toThrow(/no longer generates initial plans/); expect(generator.generate).not.toHaveBeenCalled(); });
+  test('still builds an allowlisted deterministic-planner input and rejects missing availability', () => { const value = request(); value.draft.minuteLimits[2] = ''; expect(() => buildPersonalizedWeeklyInput(value, [], '2026-10-31T00:00:00Z')).toThrow(/positive whole-session time limit/); });
+});

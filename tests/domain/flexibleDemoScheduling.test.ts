@@ -7,7 +7,7 @@ import { bundledTemplateCatalog } from '@/domain/training/templateCatalog';
 import type { PlanningRequest } from '@/domain/training/content';
 
 it('supports another demo schedule and rejects past dates or unknown interruption', () => {
- const draft = { ...emptyDraft('Asia/Kolkata'), weeklyRunningMinutes: '120', baselineLookbackDays: '28', longestSessionMinutes: '45', longestSessionDate: '2026-10-01', comfortableDurationMinutes: '30', recentInterruption: 'none' as const, entryRequirementStatus: 'meets' as const, goalMode: 'flexible' as const, startDate: '2026-11-01', trainingDays: [0, 2, 4], minuteLimits: { 0: '45', 2: '45', 4: '90' }, preferredLongRunDay: 4 };
+ const draft = { ...emptyDraft('Asia/Kolkata'), weeklyRunningMinutes: '120', baselineLookbackDays: '28', longestSessionMinutes: '45', longestSessionDate: '2026-10-01', comfortableDurationMinutes: '30', recentInterruption: 'none' as const, entryRequirementStatus: 'meets' as const, goalMode: 'flexible' as const, startDate: '2026-11-01', trainingDays: [0, 2, 4], minuteLimits: { 0: '45', 2: '45', 4: '90' }, preferredLongRunDay: 4, assumptionsConfirmed: true };
  expect(assessEligibility(draft, '2026-10-26').code).toBe('eligible');
  expect(assessEligibility(draft, '2026-11-02').fields).toContain('startDate');
  expect(assessEligibility({ ...draft, recentInterruption: 'unknown' }).fields).toContain('interruption');

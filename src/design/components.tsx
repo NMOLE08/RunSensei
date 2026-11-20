@@ -1,120 +1,53 @@
-import type { PropsWithChildren } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps, type TextProps, type ViewStyle } from 'react-native';
+import { cloneElement, useEffect, useState, type PropsWithChildren, type ReactElement, type ReactNode } from 'react';
+import { AccessibilityInfo, Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps, type TextProps, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { colors, fontFamily, radius, spacing } from '@/design/tokens';
+import { colors, elevation, fontFamily, motion, premiumRadius, radius, spacing, typography } from '@/design/tokens';
 import type { FixtureSession, FixtureState } from '@/design/fixtures';
 
-type AppTextVariant = 'body' | 'title' | 'display' | 'meta' | 'label';
+type AppTextVariant = 'body' | 'title' | 'section' | 'hero' | 'display' | 'meta' | 'label';
+export function AppText({ variant = 'body', style, ...props }: TextProps & { variant?: AppTextVariant }) { return <Text {...props} maxFontSizeMultiplier={props.maxFontSizeMultiplier ?? 2} style={[styles.text, textVariants[variant], style]} />; }
 
-export function AppText({ variant = 'body', style, ...props }: TextProps & { variant?: AppTextVariant }) {
-  return <Text {...props} style={[styles.text, textVariants[variant], style]} />;
+export function Screen({ children, scroll = true, compact = false, avoidKeyboardOnAndroid = false }: PropsWithChildren<{ scroll?: boolean; compact?: boolean; avoidKeyboardOnAndroid?: boolean }>) {
+  const body = <View style={[styles.content, compact && styles.contentCompact]}>{children}</View>;
+  const content = scroll ? <ScrollView contentContainerStyle={styles.scrollContent} keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'} keyboardShouldPersistTaps="handled" nestedScrollEnabled showsVerticalScrollIndicator={false}>{body}</ScrollView> : <View style={styles.fill}>{body}</View>;
+  return <SafeAreaView edges={['left', 'right']} style={styles.safeArea}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : avoidKeyboardOnAndroid ? 'height' : undefined} style={styles.fill}>{content}</KeyboardAvoidingView></SafeAreaView>;
 }
+export function PageHeader({ eyebrow, title, description, action }: { eyebrow?: string; title: string; description?: string; action?: ReactNode }) { return <View style={styles.pageHeader}><View style={styles.pageHeaderCopy}>{eyebrow && <AppText variant="meta" style={styles.eyebrow}>{eyebrow}</AppText>}<AppText variant="hero">{title}</AppText>{description && <AppText style={styles.pageDescription}>{description}</AppText>}</View>{action}</View>; }
+export function SectionHeader({ title, detail }: { title: string; detail?: string }) { return <View style={styles.sectionHeader}><AppText variant="section">{title}</AppText>{detail && <AppText variant="meta">{detail}</AppText>}</View>; }
+export function Card({ children, style, tone = 'default' }: PropsWithChildren<{ style?: ViewStyle; tone?: 'default' | 'soft' | 'moss' | 'coral' | 'butter' }>) { return <View style={[styles.card, tone === 'soft' && styles.cardSoft, tone === 'moss' && styles.cardMoss, tone === 'coral' && styles.cardCoral, tone === 'butter' && styles.cardButter, style]}>{children}</View>; }
 
-export function Screen({ children, scroll = true }: PropsWithChildren<{ scroll?: boolean }>) {
-  const content = scroll ? <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">{children}</ScrollView> : <View style={styles.fill}>{children}</View>;
-  return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', default: undefined })} style={styles.fill}>
-        {content}
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
+export function Button({ label, onPress, tone = 'primary', accessibilityHint, icon, disabled = false }: { label: string; onPress?: () => void; tone?: 'primary' | 'secondary' | 'accent' | 'quiet'; accessibilityHint?: string; icon?: ReactElement<{ trigger?: number }>; disabled?: boolean }) {
+  const [iconTrigger, setIconTrigger] = useState(0); const [scale] = useState(() => new Animated.Value(1)); const reduceMotion = useReducedMotion();
+  const press = () => { if (disabled) return; setIconTrigger((value) => value + 1); onPress?.(); };
+  const animate = (toValue: number) => { if (reduceMotion) return; Animated.timing(scale, { duration: motion.quick, toValue, useNativeDriver: true }).start(); };
+  const secondary = tone === 'secondary' || tone === 'quiet';
+  return <Animated.View style={[styles.buttonShell, { transform: [{ scale }] }]}><Pressable accessibilityHint={accessibilityHint} accessibilityLabel={label} accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={press} onPressIn={() => animate(0.975)} onPressOut={() => animate(1)} style={[styles.button, secondary && styles.buttonSecondary, tone === 'accent' && styles.buttonAccent, tone === 'quiet' && styles.buttonQuiet, disabled && styles.buttonDisabled]}><View style={styles.buttonContent}>{icon ? cloneElement(icon, { trigger: iconTrigger }) : null}<AppText variant="label" style={secondary ? styles.buttonSecondaryText : styles.buttonPrimaryText}>{label}</AppText></View></Pressable></Animated.View>;
 }
-
-export function Card({ children, style }: PropsWithChildren<{ style?: ViewStyle }>) {
-  return <View style={[styles.card, style]}>{children}</View>;
-}
-
-export function Button({ label, onPress, tone = 'primary', accessibilityHint }: { label: string; onPress?: () => void; tone?: 'primary' | 'secondary'; accessibilityHint?: string }) {
-  return (
-    <Pressable
-      accessibilityHint={accessibilityHint}
-      accessibilityLabel={label}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.button, tone === 'secondary' && styles.buttonSecondary, pressed && styles.pressed]}
-    >
-      <AppText variant="label" style={tone === 'primary' ? styles.buttonPrimaryText : styles.buttonSecondaryText}>{label}</AppText>
-    </Pressable>
-  );
-}
-
 export function Field({ label, value, placeholder, onChangeText, accessibilityHint, ...inputProps }: { label: string; value?: string; placeholder?: string; onChangeText?: (value: string) => void; accessibilityHint?: string } & Omit<TextInputProps, 'accessibilityHint' | 'accessibilityLabel' | 'onChangeText' | 'placeholder' | 'placeholderTextColor' | 'style' | 'value'>) {
-  return (
-    <View style={styles.fieldWrap}>
-      <AppText variant="meta">{label}</AppText>
-      <TextInput
-        accessibilityHint={accessibilityHint}
-        accessibilityLabel={label}
-        {...inputProps}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.mutedInk}
-        style={styles.field}
-        value={value}
-      />
-    </View>
-  );
+  const [focused, setFocused] = useState(false);
+  return <View style={styles.fieldWrap}><AppText variant="meta" style={styles.fieldLabel}>{label}</AppText><TextInput accessibilityHint={accessibilityHint} accessibilityLabel={label} {...inputProps} onBlur={(event) => { setFocused(false); inputProps.onBlur?.(event); }} onFocus={(event) => { setFocused(true); inputProps.onFocus?.(event); }} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={colors.subtleInk} selectionColor={colors.coral} style={[styles.field, focused && styles.fieldFocused]} value={value} /></View>;
 }
+export function ProgressBar({ progress, label }: { progress: number; label?: string }) { const reduceMotion = useReducedMotion(); const [width] = useState(() => new Animated.Value(0)); useEffect(() => { Animated.timing(width, { duration: reduceMotion ? 0 : motion.relaxed, toValue: Math.max(0, Math.min(1, progress)), useNativeDriver: false }).start(); }, [progress, reduceMotion, width]); return <View accessibilityLabel={label ?? `${Math.round(progress * 100)} percent complete`} accessibilityRole="progressbar"><View style={styles.progressTrack}><Animated.View style={[styles.progressFill, { width: width.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]} /></View></View>; }
+export function Disclosure({ title, summary, children, initiallyOpen = false, expanded, onExpandedChange }: PropsWithChildren<{ title: string; summary?: string; initiallyOpen?: boolean; expanded?: boolean; onExpandedChange?: (expanded: boolean) => void }>) { const [localOpen, setLocalOpen] = useState(initiallyOpen); const open = expanded ?? localOpen; const toggle = () => { const next = !open; if (expanded === undefined) setLocalOpen(next); onExpandedChange?.(next); }; return <View style={styles.disclosure}><Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={toggle} style={styles.disclosureButton}><View style={styles.disclosureCopy}><AppText variant="label">{title}</AppText>{summary && <AppText style={styles.disclosureSummary}>{summary}</AppText>}</View><View style={[styles.disclosureMark, open && styles.disclosureMarkOpen]}><AppText variant="label">{open ? '−' : '+'}</AppText></View></Pressable>{open && <View style={styles.disclosureBody}>{children}</View>}</View>; }
+function useReducedMotion() { const [value, setValue] = useState(true); useEffect(() => { void AccessibilityInfo.isReduceMotionEnabled().then(setValue); const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setValue); return () => subscription.remove(); }, []); return value; }
 
-export function StatusLabel({ state }: { state: FixtureState }) {
-  const copy: Record<FixtureState, string> = { planned: 'PLANNED', rest: 'REST', empty: 'NO PLAN', completed: 'COMPLETED', error: 'NEEDS REVIEW' };
-  return <AppText accessibilityLabel={`Fixture status: ${copy[state]}`} variant="meta" style={[styles.status, state === 'error' && styles.statusError, state === 'completed' && styles.statusComplete]}>{copy[state]}</AppText>;
-}
-
+export function StatusLabel({ state }: { state: FixtureState }) { const copy: Record<FixtureState, string> = { planned: 'PLANNED', rest: 'REST', empty: 'NO PLAN', completed: 'COMPLETED', error: 'NEEDS REVIEW' }; return <AppText accessibilityLabel={`Fixture status: ${copy[state]}`} variant="meta" style={[styles.status, state === 'error' && styles.statusError, state === 'completed' && styles.statusComplete]}>{copy[state]}</AppText>; }
 const fixtureDays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day, index) => ({ day, date: String(12 + index) }));
+export function DayStrip({ selectedDate = '13', days = fixtureDays }: { selectedDate?: string; days?: { day: string; date: string }[] }) { return <View accessibilityLabel={`Week day strip. Selected day ${selectedDate}.`} accessibilityRole="summary" style={styles.dayStrip}>{days.map(({ day, date }) => { const selected = date === selectedDate; return <View accessibilityLabel={`${day} ${date}${selected ? ', selected' : ''}`} key={date} style={[styles.dayTile, selected && styles.dayTileSelected]}><AppText variant="meta" style={selected && styles.dayTileSelectedText}>{day}</AppText><AppText style={[styles.dayDate, selected && styles.dayTileSelectedText]}>{date.slice(-2)}</AppText>{selected && <View accessibilityLabel="Selected date marker" style={styles.selectedMarker} />}</View>; })}</View>; }
+export function SessionRow({ session, onPress }: { session: FixtureSession; onPress?: () => void }) { return <Pressable accessibilityHint="Opens the fixture workout detail." accessibilityLabel={`${session.title}, ${session.target ?? session.purpose}, ${session.status}`} accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.sessionRow, pressed && styles.pressed]}><View style={styles.sessionCopy}><AppText variant="meta">{session.dateLabel}</AppText><AppText variant="section" style={styles.sessionTitle}>{session.title}</AppText><AppText style={styles.sessionPurpose}>{session.target ?? session.purpose}</AppText></View><StatusLabel state={session.status} /></Pressable>; }
+export function TrainingReceipt({ session }: { session: FixtureSession }) { return <Card><View style={styles.receiptTop}><AppText variant="meta">ACTIVITY RECEIPT</AppText><StatusLabel state={session.status} /></View><AppText variant="section">{session.title}</AppText><View style={styles.rule} /><ReceiptLine label="PLANNED" value={session.target ?? 'Rest'} /><ReceiptLine label="ACTUAL" value={session.status === 'completed' ? 'Recorded in fixture' : 'Not recorded'} /><ReceiptLine label="SOURCE" value="Development fixture" /></Card>; }
+function ReceiptLine({ label, value }: { label: string; value: string }) { return <View style={styles.receiptLine}><AppText variant="meta">{label}</AppText><AppText style={styles.receiptValue}>{value}</AppText></View>; }
+export function ContourDecoration({ label = 'Decorative contour lines' }: { label?: string }) { return <View accessibilityElementsHidden accessibilityLabel={label} importantForAccessibility="no" pointerEvents="none" style={styles.contours}>{Array.from({ length: 5 }, (_, index) => <View key={index} style={[styles.contour, { inset: index * 10 }]} />)}</View>; }
 
-export function DayStrip({ selectedDate = '13', days = fixtureDays }: { selectedDate?: string; days?: { day: string; date: string }[] }) {
-  return (
-    <View accessibilityLabel={`Week day strip. Selected day ${selectedDate}.`} accessibilityRole="summary" style={styles.dayStrip}>
-      {days.map(({ day, date }) => {
-        const selected = date === selectedDate;
-        return <View accessibilityLabel={`${day} ${date}${selected ? ', selected' : ''}`} key={date} style={[styles.dayTile, selected && styles.dayTileSelected]}><AppText variant="meta" style={selected && styles.dayTileSelectedText}>{day}</AppText><AppText variant="body" style={[styles.dayDate, selected && styles.dayTileSelectedText]}>{date.slice(-2)}</AppText>{selected && <View accessibilityLabel="Selected date marker" style={styles.selectedMarker} />}</View>;
-      })}
-    </View>
-  );
-}
-
-export function SessionRow({ session, onPress }: { session: FixtureSession; onPress?: () => void }) {
-  return <Pressable accessibilityHint="Opens the fixture workout detail." accessibilityLabel={`${session.title}, ${session.target ?? session.purpose}, ${session.status}`} accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.sessionRow, pressed && styles.pressed]}><View style={styles.sessionCopy}><AppText variant="meta">{session.dateLabel}</AppText><AppText variant="title" style={styles.sessionTitle}>{session.title}</AppText><AppText style={styles.sessionPurpose}>{session.target ?? session.purpose}</AppText></View><StatusLabel state={session.status} /></Pressable>;
-}
-
-export function TrainingReceipt({ session }: { session: FixtureSession }) {
-  return <Card style={styles.receipt}>
-    <View style={styles.receiptTop}><AppText variant="meta">ACTIVITY RECEIPT</AppText><StatusLabel state={session.status} /></View>
-    <AppText variant="title">{session.title}</AppText>
-    <View style={styles.rule} />
-    <ReceiptLine label="PLANNED" value={session.target ?? 'Rest'} />
-    <ReceiptLine label="ACTUAL" value={session.status === 'completed' ? 'Recorded in fixture' : 'Not recorded'} />
-    <ReceiptLine label="SOURCE" value="Development fixture" />
-  </Card>;
-}
-
-function ReceiptLine({ label, value }: { label: string; value: string }) {
-  return <View style={styles.receiptLine}><AppText variant="meta">{label}</AppText><AppText style={styles.receiptValue}>{value}</AppText></View>;
-}
-
-export function ContourDecoration({ label = 'Decorative contour lines' }: { label?: string }) {
-  return <View accessibilityElementsHidden accessibilityLabel={label} importantForAccessibility="no" pointerEvents="none" style={styles.contours}>{Array.from({ length: 5 }, (_, index) => <View key={index} style={[styles.contour, { inset: index * 8 }]} />)}</View>;
-}
-
-const textVariants = StyleSheet.create({
-  body: { fontFamily: fontFamily.body, color: colors.ink, fontSize: 16, lineHeight: 24 },
-  title: { fontFamily: fontFamily.body, color: colors.ink, fontSize: 26, fontWeight: '700', lineHeight: 32 },
-  display: { fontFamily: fontFamily.display, color: colors.periwinkle, fontSize: 56, lineHeight: 62, letterSpacing: -1 },
-  meta: { fontFamily: fontFamily.mono, color: colors.mutedInk, fontSize: 12, lineHeight: 16, letterSpacing: 0.3 },
-  label: { fontFamily: fontFamily.body, color: colors.ink, fontSize: 16, fontWeight: '700', lineHeight: 20 },
-});
-
+const textVariants = StyleSheet.create({ body: { fontFamily: fontFamily.body, color: colors.ink, ...typography.body }, title: { fontFamily: fontFamily.body, color: colors.ink, fontWeight: '800', ...typography.title }, section: { fontFamily: fontFamily.body, color: colors.ink, fontWeight: '700', ...typography.section }, hero: { fontFamily: fontFamily.body, color: colors.ink, fontWeight: '800', ...typography.hero }, display: { fontFamily: fontFamily.display, color: colors.coral, fontSize: 56, lineHeight: 60, letterSpacing: -1 }, meta: { fontFamily: fontFamily.mono, color: colors.mutedInk, ...typography.meta }, label: { fontFamily: fontFamily.body, color: colors.ink, fontSize: 16, fontWeight: '700', lineHeight: 21 } });
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.canvas }, fill: { flex: 1 }, scrollContent: { gap: spacing.md, padding: spacing.md, paddingBottom: spacing.xl },
-  text: { includeFontPadding: false }, card: { backgroundColor: colors.surface, borderColor: colors.divider, borderRadius: radius.medium, borderWidth: StyleSheet.hairlineWidth, gap: spacing.sm, overflow: 'hidden', padding: spacing.md },
-  button: { alignItems: 'center', alignSelf: 'stretch', backgroundColor: colors.ink, borderRadius: radius.small, justifyContent: 'center', minHeight: 48, paddingHorizontal: spacing.md }, buttonSecondary: { backgroundColor: colors.surface, borderColor: colors.ink, borderWidth: 1 }, buttonPrimaryText: { color: colors.onInk }, buttonSecondaryText: { color: colors.ink }, pressed: { opacity: 0.76 },
-  fieldWrap: { gap: spacing.xs }, field: { backgroundColor: colors.surface, borderColor: colors.divider, borderRadius: radius.small, borderWidth: 1, color: colors.ink, fontFamily: fontFamily.body, fontSize: 16, minHeight: 48, paddingHorizontal: spacing.sm },
-  status: { alignSelf: 'flex-start', backgroundColor: colors.accentWash, borderRadius: radius.small, color: colors.accentInk, overflow: 'hidden', paddingHorizontal: spacing.xs, paddingVertical: spacing.xxs }, statusComplete: { backgroundColor: colors.ink, color: colors.onInk }, statusError: { backgroundColor: '#FCEDED', color: colors.error },
-  dayStrip: { flexDirection: 'row', gap: spacing.xs, justifyContent: 'space-between' }, dayTile: { alignItems: 'center', borderRadius: radius.small, flex: 1, gap: 2, minHeight: 56, justifyContent: 'center', paddingVertical: spacing.xs }, dayTileSelected: { backgroundColor: colors.ink }, dayDate: { fontFamily: fontFamily.body, fontSize: 16 }, dayTileSelectedText: { color: colors.onInk }, selectedMarker: { backgroundColor: colors.onInk, borderRadius: 2, height: 4, width: 4 },
-  sessionRow: { alignItems: 'flex-start', backgroundColor: colors.surface, borderBottomColor: colors.divider, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: spacing.sm, justifyContent: 'space-between', minHeight: 80, paddingVertical: spacing.sm }, sessionCopy: { flex: 1, gap: 2 }, sessionTitle: { fontSize: 18, lineHeight: 24 }, sessionPurpose: { color: colors.mutedInk, fontSize: 14, lineHeight: 20 },
-  receipt: { gap: spacing.sm }, receiptTop: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' }, rule: { backgroundColor: colors.divider, height: StyleSheet.hairlineWidth, width: '100%' }, receiptLine: { flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between' }, receiptValue: { color: colors.ink, flexShrink: 1, fontSize: 14, textAlign: 'right' },
-  contours: { bottom: -42, height: 180, opacity: 0.42, position: 'absolute', right: -40, width: 180 }, contour: { borderColor: colors.periwinkle, borderRadius: 999, borderWidth: 1, position: 'absolute' },
+  safeArea: { flex: 1, backgroundColor: colors.canvas }, fill: { flex: 1 }, scrollContent: { flexGrow: 1 }, content: { alignSelf: 'center', gap: spacing.lg, maxWidth: 760, padding: spacing.md, paddingBottom: spacing.section, width: '100%' }, contentCompact: { gap: spacing.md }, text: { includeFontPadding: false },
+  pageHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between', paddingBottom: spacing.xs, paddingTop: spacing.sm }, pageHeaderCopy: { flex: 1, gap: spacing.xs }, eyebrow: { color: colors.mossDark }, pageDescription: { color: colors.mutedInk, maxWidth: 560 }, sectionHeader: { alignItems: 'baseline', flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between' },
+  card: { ...elevation.card, backgroundColor: colors.surface, borderColor: 'rgba(32,37,34,0.08)', borderRadius: premiumRadius.card, borderWidth: StyleSheet.hairlineWidth, gap: spacing.sm, overflow: 'hidden', padding: spacing.lg }, cardSoft: { backgroundColor: colors.canvasRaised, shadowOpacity: 0, elevation: 0 }, cardMoss: { backgroundColor: colors.mossWash, borderColor: colors.moss }, cardCoral: { backgroundColor: colors.coralWash, borderColor: colors.coral }, cardButter: { backgroundColor: colors.butterWash, borderColor: colors.butter },
+  buttonShell: { alignSelf: 'stretch' }, button: { alignItems: 'center', alignSelf: 'stretch', backgroundColor: colors.ink, borderRadius: premiumRadius.control, justifyContent: 'center', minHeight: 56, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }, buttonContent: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs }, buttonSecondary: { backgroundColor: colors.surface, borderColor: colors.dividerStrong, borderWidth: 1 }, buttonAccent: { backgroundColor: colors.coral }, buttonQuiet: { backgroundColor: 'transparent', borderColor: colors.divider, minHeight: 48 }, buttonDisabled: { opacity: 0.42 }, buttonPrimaryText: { color: colors.onInk }, buttonSecondaryText: { color: colors.ink },
+  fieldWrap: { gap: spacing.xs }, fieldLabel: { color: colors.mossDark }, field: { backgroundColor: colors.surface, borderColor: colors.dividerStrong, borderRadius: premiumRadius.control, borderWidth: 1, color: colors.ink, fontFamily: fontFamily.body, fontSize: 16, minHeight: 54, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }, fieldFocused: { borderColor: colors.focus, borderWidth: 2 },
+  progressTrack: { backgroundColor: colors.surfaceMuted, borderRadius: radius.pill, height: 7, overflow: 'hidden' }, progressFill: { backgroundColor: colors.coral, borderRadius: radius.pill, height: '100%' }, disclosure: { borderBottomColor: colors.divider, borderBottomWidth: StyleSheet.hairlineWidth }, disclosureButton: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, minHeight: 64, paddingVertical: spacing.sm }, disclosureCopy: { flex: 1, gap: 2 }, disclosureSummary: { color: colors.mutedInk, fontSize: 14, lineHeight: 20 }, disclosureMark: { alignItems: 'center', backgroundColor: colors.surfaceMuted, borderRadius: radius.pill, height: 36, justifyContent: 'center', width: 36 }, disclosureMarkOpen: { backgroundColor: colors.butter }, disclosureBody: { gap: spacing.sm, paddingBottom: spacing.md },
+  status: { alignSelf: 'flex-start', backgroundColor: colors.mossWash, borderRadius: radius.pill, color: colors.mossDark, overflow: 'hidden', paddingHorizontal: spacing.sm, paddingVertical: spacing.xxs }, statusComplete: { backgroundColor: colors.moss, color: colors.onInk }, statusError: { backgroundColor: colors.errorWash, color: colors.error },
+  dayStrip: { flexDirection: 'row', gap: spacing.xs, justifyContent: 'space-between' }, dayTile: { alignItems: 'center', borderRadius: radius.medium, flex: 1, gap: 2, minHeight: 62, justifyContent: 'center', paddingVertical: spacing.xs }, dayTileSelected: { backgroundColor: colors.ink }, dayDate: { fontFamily: fontFamily.body, fontSize: 16 }, dayTileSelectedText: { color: colors.onInk }, selectedMarker: { backgroundColor: colors.butter, borderRadius: 3, height: 5, width: 5 },
+  sessionRow: { alignItems: 'flex-start', borderBottomColor: colors.divider, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: spacing.sm, justifyContent: 'space-between', minHeight: 88, paddingVertical: spacing.md }, sessionCopy: { flex: 1, gap: 3 }, sessionTitle: { fontSize: 18, lineHeight: 24 }, sessionPurpose: { color: colors.mutedInk, fontSize: 14, lineHeight: 20 }, pressed: { opacity: 0.74 }, receiptTop: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' }, rule: { backgroundColor: colors.divider, height: StyleSheet.hairlineWidth, width: '100%' }, receiptLine: { flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between' }, receiptValue: { color: colors.ink, flexShrink: 1, fontSize: 14, textAlign: 'right' }, contours: { bottom: -52, height: 200, opacity: 0.22, position: 'absolute', right: -52, width: 200 }, contour: { borderColor: colors.moss, borderRadius: radius.pill, borderWidth: 1, position: 'absolute' },
 });

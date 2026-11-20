@@ -1,0 +1,214 @@
+{
+  "policy_id": "runsensei.5k.first_5k_run_walk.extended_session",
+  "version": "0.1.0",
+  "goal_family": "5k",
+  "plan_family": "first_5k_true_beginner_run_walk",
+  "title": "Extended easy run/walk (long-run analogue)",
+  "algorithm_ids": [
+    8
+  ],
+  "runner_eligibility": {
+    "eligible_profile": "Adult beginner working toward completing 5 kilometres with walking allowed, not a time goal",
+    "minimum_age_years": 18,
+    "can_walk_30_minutes_comfortably": true,
+    "current_training_requirement": "No running history or limited recent running; not suitable for advanced performance goals",
+    "do_not_auto_enroll_if": [
+      "current concerning symptoms or injury",
+      "user cannot comfortably walk 30 minutes",
+      "user requests a performance/time-based 5K plan",
+      "user is under 18"
+    ],
+    "note": "These are first-release product-scope gates, not medical clearance or diagnostic screening."
+  },
+  "required_inputs": [
+    "plan_week",
+    "approved_workout_structure_policy",
+    "runner_current_capacity",
+    "runner_feedback"
+  ],
+  "training_rules": {
+    "session_code": "C",
+    "session_type": "extended_easy_run_walk",
+    "week_by_week_extended_session": [
+      {
+        "week": 1,
+        "session_code": "C",
+        "main_movement_seconds": 1260,
+        "goal_distance_meters": null,
+        "includes_walking_recovery": true
+      },
+      {
+        "week": 2,
+        "session_code": "C",
+        "main_movement_seconds": 1470,
+        "goal_distance_meters": null,
+        "includes_walking_recovery": true
+      },
+      {
+        "week": 3,
+        "session_code": "C",
+        "main_movement_seconds": 1680,
+        "goal_distance_meters": null,
+        "includes_walking_recovery": true
+      },
+      {
+        "week": 4,
+        "session_code": "C",
+        "main_movement_seconds": 1440,
+        "goal_distance_meters": null,
+        "includes_walking_recovery": true
+      },
+      {
+        "week": 5,
+        "session_code": "C",
+        "main_movement_seconds": 1800,
+        "goal_distance_meters": null,
+        "includes_walking_recovery": true
+      },
+      {
+        "week": 6,
+        "session_code": "C",
+        "main_movement_seconds": 2160,
+        "goal_distance_meters": null,
+        "includes_walking_recovery": true
+      },
+      {
+        "week": 7,
+        "session_code": "C",
+        "main_movement_seconds": 2520,
+        "goal_distance_meters": null,
+        "includes_walking_recovery": true
+      },
+      {
+        "week": 8,
+        "session_code": "C",
+        "main_movement_seconds": 1800,
+        "goal_distance_meters": null,
+        "includes_walking_recovery": true
+      },
+      {
+        "week": 9,
+        "session_code": "C",
+        "main_movement_seconds": 2400,
+        "goal_distance_meters": null,
+        "includes_walking_recovery": true
+      },
+      {
+        "week": 10,
+        "session_code": "C",
+        "main_movement_seconds": 2640,
+        "goal_distance_meters": null,
+        "includes_walking_recovery": true
+      },
+      {
+        "week": 11,
+        "session_code": "C",
+        "main_movement_seconds": 2880,
+        "goal_distance_meters": null,
+        "includes_walking_recovery": true
+      },
+      {
+        "week": 12,
+        "session_code": "C",
+        "main_movement_seconds": null,
+        "goal_distance_meters": 5000,
+        "includes_walking_recovery": true
+      }
+    ],
+    "include_walk_intervals_in_main_minutes": true,
+    "single_session_progression_rule": "Do not exceed the current approved weekly schedule. In proposed weeks 1-11, an extended session may not exceed the historical non-deload maximum by more than 360 seconds. This is a draft engineering guard, not a medical threshold.",
+    "week_12_transition": "Replace timed extended session with a separate 5,000-metre self-paced walk/run completion event",
+    "distance_rule": "No initial kilometres, long-run kilometres, or pace calculations for beginner time-based sessions; track observed distance separately after completion",
+    "nonrunning_duration_minutes_each_session": 10
+  },
+  "fallback_rules": {
+    "no_reliable_distance": "Remain duration-based",
+    "reported_unusual_fatigue_or_pain": "Hold progression and offer recovery/health advice; do not increase extended session",
+    "event_does_not_fit_available_days": "Block until scheduling constraints are resolved"
+  },
+  "safety_constraints": {
+    "must_be_easy_effort_rpe": [
+      3,
+      4
+    ],
+    "week_12_event_distance_meters": 5000,
+    "do_not_increase_to_make_up_missed_session": true,
+    "extended_session_must_match_template": true
+  },
+  "evidence_sources": [
+    {
+      "source_id": "nhs_couch_to_5k",
+      "type": "external_guidance",
+      "title": "NHS Better Health - Couch to 5K running plan",
+      "url": "https://www.nhs.uk/better-health/get-active/get-running-with-couch-to-5k/couch-to-5k-running-plan/",
+      "supports": "Beginner run/walk programming, 3 run days per week, rest days between runs, five-minute walking warm-up and cool-down, self-paced effort. NHS uses 9 weeks; this pack is an original 12-week proposal, not the NHS schedule."
+    },
+    {
+      "source_id": "nhs_running_injuries",
+      "type": "external_guidance",
+      "title": "NHS - Knee pain and other running injuries",
+      "url": "https://www.nhs.uk/live-well/exercise/knee-pain-and-other-running-injuries/",
+      "supports": "Build up gradually, warm up and cool down, avoid running through pain; not a source of exact numeric progression limits."
+    },
+    {
+      "source_id": "nyrr_5k_conservative_pdf",
+      "type": "user_supplied_reference",
+      "title": "NYRR 5K Training Plan Conservative (12 Weeks)",
+      "local_file": "5k Training Plan Conservative.pdf",
+      "pages": [
+        1,
+        2,
+        3
+      ],
+      "supports": "Reference for RPE descriptors, structured sessions and 5K goal race. NOT a true zero-running beginner schedule: includes early speedwork and tempo sessions."
+    }
+  ],
+  "review_status": "draft",
+  "reviewer": {
+    "name": null,
+    "credentials": null,
+    "reviewed_at": null,
+    "approval_record_id": null
+  },
+  "test_cases": [
+    {
+      "id": "P8_W1",
+      "given": {
+        "week": 1
+      },
+      "expected": {
+        "extended_main_seconds": 1260
+      }
+    },
+    {
+      "id": "P8_W7",
+      "given": {
+        "week": 7
+      },
+      "expected": {
+        "extended_main_seconds": 2520
+      }
+    },
+    {
+      "id": "P8_W12",
+      "given": {
+        "week": 12
+      },
+      "expected": {
+        "extended_main_seconds": null,
+        "event_distance_meters": 5000
+      }
+    }
+  ],
+  "release_gate": {
+    "can_activate": false,
+    "requires": [
+      "qualified_running_coach_signoff",
+      "clinical_safety_review_for_symptom_handling",
+      "test_suite_pass",
+      "versioned_policy_catalog_approval"
+    ],
+    "on_missing_or_unapproved": "BLOCK_PLAN_GENERATION_NO_SILENT_FALLBACK"
+  },
+  "notes": "DRAFT. Numerical tables are original engineering proposals needing coaching validation. Do not describe as an NYRR or NHS exact plan."
+}

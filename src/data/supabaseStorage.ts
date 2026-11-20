@@ -1,9 +1,13 @@
-import { openAppDatabase } from './expoSqliteDatabase';
-import { migrate } from './migrations';
+import * as SecureStore from 'expo-secure-store';
 
-const key = (value: string) => `supabase:${value}`;
+const key = (value: string) => `runsensei.supabase.${value}`;
+
+/**
+ * Supabase's persisted refresh token is credential material. It belongs in the
+ * platform keystore, never in the app's ordinary SQLite database.
+ */
 export const supabaseStorage = {
-  async getItem(itemKey: string): Promise<string | null> { const database = await openAppDatabase(); await migrate(database, new Date().toISOString()); const row = await database.getFirst<{ value: string }>('SELECT value FROM app_settings WHERE key = ?', [key(itemKey)]); return row?.value ?? null; },
-  async setItem(itemKey: string, value: string): Promise<void> { const database = await openAppDatabase(); await migrate(database, new Date().toISOString()); await database.run('INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)', [key(itemKey), value]); },
-  async removeItem(itemKey: string): Promise<void> { const database = await openAppDatabase(); await migrate(database, new Date().toISOString()); await database.run('DELETE FROM app_settings WHERE key = ?', [key(itemKey)]); },
+  getItem(itemKey: string): Promise<string | null> { return SecureStore.getItemAsync(key(itemKey)); },
+  setItem(itemKey: string, value: string): Promise<void> { return SecureStore.setItemAsync(key(itemKey), value); },
+  removeItem(itemKey: string): Promise<void> { return SecureStore.deleteItemAsync(key(itemKey)); },
 };

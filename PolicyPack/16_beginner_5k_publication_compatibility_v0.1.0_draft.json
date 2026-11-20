@@ -1,0 +1,20 @@
+{
+  "policyId": "torto.5k.beginner.publication_compatibility",
+  "version": "0.1.0-draft",
+  "lifecycle": "draft",
+  "productionEligible": false,
+  "reviewer": null,
+  "approvalScope": null,
+  "dependencies": ["runsensei.5k.beginner.workload-compatibility@0.4.0-draft", "runsensei.5k.beginner.personalization@0.3.0-draft", "torto.5k.beginner.calendar_availability@0.5.0-draft"],
+  "rules": {
+    "numericalRules": "Reuse exact v0.4 candidate rules without changing numbers; separate signed workload_compatibility approval required.",
+    "evidenceDates": "Require explicit current-capability and weekly-evidence confirmations plus a valid longest-session observation date; future or missing dates are not current evidence.",
+    "entry": "Preserve adult, comfortable walking, experience, completion goal, health and interruption checks.",
+    "calendar": "Use exact v0.5 calendar rules; do not require uncollected session-time answers.",
+    "validation": "Require full authored-program and schedule validation before initial-week publication.",
+    "unknownMeasurementWindows": "Weekly averages and individual longest sessions remain incomparable without equivalent measurement definitions and windows; never label their numeric difference contradictory.",
+    "fallback": "Missing evidence, failed rules or missing signed dependencies block publication.",
+    "scope": "Initial week only. No automatic progression or adaptation."
+  },
+  "reviewRequired": ["Clinical and coaching suitability of v0.4 numerical entry rules", "Use of explicit current confirmations as evidence freshness", "Calendar-only availability", "First-week publication with no authorized future-week progression"]
+}

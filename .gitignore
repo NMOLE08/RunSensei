@@ -1,5 +1,6 @@
 .expo/
 node_modules/
+.tools/
 .idea/
 android/.gradle/
 android/.kotlin/

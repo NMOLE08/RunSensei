@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "foundation-workload-comparison-v1",
+  "policyId": "torto.foundation.starting_workload_comparison",
+  "version": "0.1.0-draft",
+  "lifecycle": "draft",
+  "releaseEligibility": "blocked",
+  "researchOnly": true,
+  "productionEligible": false,
+  "reviewer": null,
+  "reviewDate": null,
+  "classification": "original_candidate_requires_qualified_review",
+  "observationWeeks": 4,
+  "weekStartsOn": "Monday",
+  "rounding": "Floor fractional final running seconds; retain exact numerator and denominator in audit inputs.",
+  "formulas": {
+    "confirmed_report": "S",
+    "observed_mean": "floor(sum(Wi) / 4)",
+    "lower_reference": "floor(min(S, Wlatest, median(W1,W2,W3,W4)))"
+  },
+  "requirements": [
+    "Exactly four complete consecutive runner-local weeks before the target training week for observed-history calculations",
+    "Explicit coverage declarations; absence of records never proves zero or complete coverage",
+    "One current training episode with no unresolved interruption",
+    "Actual running seconds must be explicitly supported; GPS and guided elapsed time are not running time",
+    "No automatic candidate selection, prescription, transformation or publication"
+  ],
+  "foundationReference": "runsensei.foundation.multiweek@0.2.0-draft",
+  "evidence": [],
+  "limitations": [
+    "Four weeks and all three formulas are research comparison candidates, not validated safety rules",
+    "The lower-reference method is not established as medically safer or superior",
+    "Complete outcome reporting does not prove complete activity-history coverage",
+    "Repeatable bout and accumulated-session compatibility may require additional evidence and reviewed policy"
+  ]
+}

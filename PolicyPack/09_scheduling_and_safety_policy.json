@@ -1,0 +1,169 @@
+{
+  "policy_id": "runsensei.5k.first_5k_run_walk.scheduling_safety",
+  "version": "0.1.0",
+  "goal_family": "5k",
+  "plan_family": "first_5k_true_beginner_run_walk",
+  "title": "Supporting scheduling (#13) and plan safety validation (#19)",
+  "algorithm_ids": [
+    13,
+    19
+  ],
+  "runner_eligibility": {
+    "eligible_profile": "Adult beginner working toward completing 5 kilometres with walking allowed, not a time goal",
+    "minimum_age_years": 18,
+    "can_walk_30_minutes_comfortably": true,
+    "current_training_requirement": "No running history or limited recent running; not suitable for advanced performance goals",
+    "do_not_auto_enroll_if": [
+      "current concerning symptoms or injury",
+      "user cannot comfortably walk 30 minutes",
+      "user requests a performance/time-based 5K plan",
+      "user is under 18"
+    ],
+    "note": "These are first-release product-scope gates, not medical clearance or diagnostic screening."
+  },
+  "required_inputs": [
+    "adult_age_confirmed",
+    "can_walk_30_minutes_comfortably",
+    "reported_symptoms_or_injury",
+    "available_run_days",
+    "plan_start_date",
+    "goal_date_or_default",
+    "policy_catalog_status"
+  ],
+  "training_rules": {
+    "week_start_day": "Monday",
+    "default_run_days": [
+      "Tuesday",
+      "Thursday",
+      "Sunday"
+    ],
+    "session_priority": [
+      "C",
+      "A",
+      "B"
+    ],
+    "required_session_count_weekly": 3,
+    "require_nonconsecutive_run_days_including_week_boundary": true,
+    "minimum_rest_days_between_sessions": 1,
+    "race_week_event_role": "C",
+    "race_date_constraint": "If a fixed date is entered, it must be in Week 12, with surrounding sessions scheduled so the rest gap is maintained; otherwise reject with explicit reason.",
+    "search_procedure": "Enumerate all combinations of 3 available weekdays in chronological order; remove combinations with adjacent days (cyclic Mon/Sun included); assign C to preferred long day or fixed race day and A/B to the other two; maximize match to preferred days; tie-break lexicographically.",
+    "no_feasible_schedule_action": "BLOCK_ASK_TO_CHANGE_AVAILABILITY_OR_PLAN_FAMILY",
+    "pre_generation_validations": [
+      "all_required_policies_same_goal_and_plan_family",
+      "all_policy_versions_locked",
+      "all_policies_release_approved",
+      "runner_eligible",
+      "36 templates present",
+      "weekly_seconds_reconciled",
+      "run_days_no_adjacent",
+      "pace_not_fabricated",
+      "hard_sessions_zero",
+      "event_duration_null"
+    ],
+    "post_generation_checks": [
+      "generated 12 weeks",
+      "generated exactly 36 sessions",
+      "all scheduled dates unique",
+      "no adjacent run days",
+      "steps sum to budgets",
+      "recovery week protected",
+      "no unapproved workout substitutions",
+      "event 5000 metres",
+      "full provenance policy_id/version on every session"
+    ]
+  },
+  "fallback_rules": {
+    "only_two_days_available": "BLOCK: v0.1.0 is a three-day program; do not compress or improvise",
+    "session_missed": "Never move missed workout into the following run day; keep training plan stable or use separately reviewed adaptation policy",
+    "pain_during_or_after_running": "Do not prescribe an increase; give stop/seek-clinical-assessment guidance where appropriate",
+    "any_policy_draft": "BLOCK_PLAN_GENERATION_NO_SILENT_FALLBACK"
+  },
+  "safety_constraints": {
+    "all_policies_must_be_release_approved": true,
+    "do_not_treat_injury_screen_as_medical_diagnosis": true,
+    "never_generate_unreviewed_numerics": true,
+    "minimum_rest_days": 1,
+    "week_boundary_recovery": true
+  },
+  "evidence_sources": [
+    {
+      "source_id": "nhs_couch_to_5k",
+      "type": "external_guidance",
+      "title": "NHS Better Health - Couch to 5K running plan",
+      "url": "https://www.nhs.uk/better-health/get-active/get-running-with-couch-to-5k/couch-to-5k-running-plan/",
+      "supports": "Beginner run/walk programming, 3 run days per week, rest days between runs, five-minute walking warm-up and cool-down, self-paced effort. NHS uses 9 weeks; this pack is an original 12-week proposal, not the NHS schedule."
+    },
+    {
+      "source_id": "nhs_running_injuries",
+      "type": "external_guidance",
+      "title": "NHS - Knee pain and other running injuries",
+      "url": "https://www.nhs.uk/live-well/exercise/knee-pain-and-other-running-injuries/",
+      "supports": "Build up gradually, warm up and cool down, avoid running through pain; not a source of exact numeric progression limits."
+    }
+  ],
+  "review_status": "draft",
+  "reviewer": {
+    "name": null,
+    "credentials": null,
+    "reviewed_at": null,
+    "approval_record_id": null
+  },
+  "test_cases": [
+    {
+      "id": "P13_DEFAULT",
+      "given": {
+        "days": [
+          "Tuesday",
+          "Thursday",
+          "Sunday"
+        ]
+      },
+      "expected": {
+        "decision": "ALLOW"
+      }
+    },
+    {
+      "id": "P13_ADJACENT",
+      "given": {
+        "days": [
+          "Monday",
+          "Tuesday",
+          "Friday"
+        ]
+      },
+      "expected": {
+        "decision": "REJECT_ADJACENT_DAYS"
+      }
+    },
+    {
+      "id": "P19_DRAFT_BLOCK",
+      "given": {
+        "policy_review_status": "draft"
+      },
+      "expected": {
+        "decision": "BLOCK_PLAN_GENERATION_NO_SILENT_FALLBACK"
+      }
+    },
+    {
+      "id": "P19_MISSING_POLICY",
+      "given": {
+        "loaded_policy_count": 8
+      },
+      "expected": {
+        "decision": "BLOCK_INCOMPLETE_POLICY"
+      }
+    }
+  ],
+  "release_gate": {
+    "can_activate": false,
+    "requires": [
+      "qualified_running_coach_signoff",
+      "clinical_safety_review_for_symptom_handling",
+      "test_suite_pass",
+      "versioned_policy_catalog_approval"
+    ],
+    "on_missing_or_unapproved": "BLOCK_PLAN_GENERATION_NO_SILENT_FALLBACK"
+  },
+  "notes": "DRAFT. Numerical tables are original engineering proposals needing coaching validation. Do not describe as an NYRR or NHS exact plan."
+}

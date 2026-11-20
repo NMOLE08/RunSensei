@@ -1,0 +1,521 @@
+{
+  "artifact_type": "OFFLINE_DRAFT_SIMULATION_ONLY",
+  "production_approved": false,
+  "policy_pack_version": "0.1.0",
+  "calendar_start_monday": "2026-11-09",
+  "note": "Example dates are illustrative and not user-specific. Does not constitute reviewed running prescription. All policy release gates remain blocked.",
+  "weeks": [
+    {
+      "week": 1,
+      "phase": "base",
+      "deload": false,
+      "sessions": [
+        {
+          "session": "A",
+          "date": "2026-11-10",
+          "name": "Easy run/walk",
+          "run_seconds": 60,
+          "walk_seconds": 120,
+          "repetitions": 6,
+          "main_seconds": 1080,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 1680
+        },
+        {
+          "session": "B",
+          "date": "2026-11-12",
+          "name": "Easy run/walk",
+          "run_seconds": 60,
+          "walk_seconds": 120,
+          "repetitions": 6,
+          "main_seconds": 1080,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 1680
+        },
+        {
+          "session": "C",
+          "date": "2026-11-15",
+          "name": "Extended easy run/walk",
+          "run_seconds": 60,
+          "walk_seconds": 120,
+          "repetitions": 7,
+          "main_seconds": 1260,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 1860
+        }
+      ]
+    },
+    {
+      "week": 2,
+      "phase": "base",
+      "deload": false,
+      "sessions": [
+        {
+          "session": "A",
+          "date": "2026-11-17",
+          "name": "Easy run/walk",
+          "run_seconds": 90,
+          "walk_seconds": 120,
+          "repetitions": 6,
+          "main_seconds": 1260,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 1860
+        },
+        {
+          "session": "B",
+          "date": "2026-11-19",
+          "name": "Easy run/walk",
+          "run_seconds": 90,
+          "walk_seconds": 120,
+          "repetitions": 6,
+          "main_seconds": 1260,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 1860
+        },
+        {
+          "session": "C",
+          "date": "2026-11-22",
+          "name": "Extended easy run/walk",
+          "run_seconds": 90,
+          "walk_seconds": 120,
+          "repetitions": 7,
+          "main_seconds": 1470,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2070
+        }
+      ]
+    },
+    {
+      "week": 3,
+      "phase": "base",
+      "deload": false,
+      "sessions": [
+        {
+          "session": "A",
+          "date": "2026-11-24",
+          "name": "Easy run/walk",
+          "run_seconds": 120,
+          "walk_seconds": 120,
+          "repetitions": 6,
+          "main_seconds": 1440,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2040
+        },
+        {
+          "session": "B",
+          "date": "2026-11-26",
+          "name": "Easy run/walk",
+          "run_seconds": 120,
+          "walk_seconds": 120,
+          "repetitions": 6,
+          "main_seconds": 1440,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2040
+        },
+        {
+          "session": "C",
+          "date": "2026-11-29",
+          "name": "Extended easy run/walk",
+          "run_seconds": 120,
+          "walk_seconds": 120,
+          "repetitions": 7,
+          "main_seconds": 1680,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2280
+        }
+      ]
+    },
+    {
+      "week": 4,
+      "phase": "base",
+      "deload": true,
+      "sessions": [
+        {
+          "session": "A",
+          "date": "2026-12-01",
+          "name": "Easy run/walk",
+          "run_seconds": 120,
+          "walk_seconds": 120,
+          "repetitions": 5,
+          "main_seconds": 1200,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 1800
+        },
+        {
+          "session": "B",
+          "date": "2026-12-03",
+          "name": "Easy run/walk",
+          "run_seconds": 120,
+          "walk_seconds": 120,
+          "repetitions": 5,
+          "main_seconds": 1200,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 1800
+        },
+        {
+          "session": "C",
+          "date": "2026-12-06",
+          "name": "Extended easy run/walk",
+          "run_seconds": 120,
+          "walk_seconds": 120,
+          "repetitions": 6,
+          "main_seconds": 1440,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2040
+        }
+      ]
+    },
+    {
+      "week": 5,
+      "phase": "development",
+      "deload": false,
+      "sessions": [
+        {
+          "session": "A",
+          "date": "2026-12-08",
+          "name": "Easy run/walk",
+          "run_seconds": 180,
+          "walk_seconds": 120,
+          "repetitions": 5,
+          "main_seconds": 1500,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2100
+        },
+        {
+          "session": "B",
+          "date": "2026-12-10",
+          "name": "Easy run/walk",
+          "run_seconds": 180,
+          "walk_seconds": 120,
+          "repetitions": 5,
+          "main_seconds": 1500,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2100
+        },
+        {
+          "session": "C",
+          "date": "2026-12-13",
+          "name": "Extended easy run/walk",
+          "run_seconds": 180,
+          "walk_seconds": 120,
+          "repetitions": 6,
+          "main_seconds": 1800,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2400
+        }
+      ]
+    },
+    {
+      "week": 6,
+      "phase": "development",
+      "deload": false,
+      "sessions": [
+        {
+          "session": "A",
+          "date": "2026-12-15",
+          "name": "Easy run/walk",
+          "run_seconds": 240,
+          "walk_seconds": 120,
+          "repetitions": 5,
+          "main_seconds": 1800,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2400
+        },
+        {
+          "session": "B",
+          "date": "2026-12-17",
+          "name": "Easy run/walk",
+          "run_seconds": 240,
+          "walk_seconds": 120,
+          "repetitions": 5,
+          "main_seconds": 1800,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2400
+        },
+        {
+          "session": "C",
+          "date": "2026-12-20",
+          "name": "Extended easy run/walk",
+          "run_seconds": 240,
+          "walk_seconds": 120,
+          "repetitions": 6,
+          "main_seconds": 2160,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2760
+        }
+      ]
+    },
+    {
+      "week": 7,
+      "phase": "development",
+      "deload": false,
+      "sessions": [
+        {
+          "session": "A",
+          "date": "2026-12-22",
+          "name": "Easy run/walk",
+          "run_seconds": 300,
+          "walk_seconds": 120,
+          "repetitions": 4,
+          "main_seconds": 1680,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2280
+        },
+        {
+          "session": "B",
+          "date": "2026-12-24",
+          "name": "Easy run/walk",
+          "run_seconds": 300,
+          "walk_seconds": 120,
+          "repetitions": 5,
+          "main_seconds": 2100,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2700
+        },
+        {
+          "session": "C",
+          "date": "2026-12-27",
+          "name": "Extended easy run/walk",
+          "run_seconds": 300,
+          "walk_seconds": 120,
+          "repetitions": 6,
+          "main_seconds": 2520,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 3120
+        }
+      ]
+    },
+    {
+      "week": 8,
+      "phase": "development",
+      "deload": true,
+      "sessions": [
+        {
+          "session": "A",
+          "date": "2026-12-29",
+          "name": "Easy run/walk",
+          "run_seconds": 240,
+          "walk_seconds": 120,
+          "repetitions": 4,
+          "main_seconds": 1440,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2040
+        },
+        {
+          "session": "B",
+          "date": "2026-12-31",
+          "name": "Easy run/walk",
+          "run_seconds": 240,
+          "walk_seconds": 120,
+          "repetitions": 4,
+          "main_seconds": 1440,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2040
+        },
+        {
+          "session": "C",
+          "date": "2027-01-03",
+          "name": "Extended easy run/walk",
+          "run_seconds": 240,
+          "walk_seconds": 120,
+          "repetitions": 5,
+          "main_seconds": 1800,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2400
+        }
+      ]
+    },
+    {
+      "week": 9,
+      "phase": "race_preparation",
+      "deload": false,
+      "sessions": [
+        {
+          "session": "A",
+          "date": "2027-01-05",
+          "name": "Easy run/walk",
+          "run_seconds": 360,
+          "walk_seconds": 120,
+          "repetitions": 4,
+          "main_seconds": 1920,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2520
+        },
+        {
+          "session": "B",
+          "date": "2027-01-07",
+          "name": "Easy run/walk",
+          "run_seconds": 360,
+          "walk_seconds": 120,
+          "repetitions": 4,
+          "main_seconds": 1920,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2520
+        },
+        {
+          "session": "C",
+          "date": "2027-01-10",
+          "name": "Extended easy run/walk",
+          "run_seconds": 360,
+          "walk_seconds": 120,
+          "repetitions": 5,
+          "main_seconds": 2400,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 3000
+        }
+      ]
+    },
+    {
+      "week": 10,
+      "phase": "race_preparation",
+      "deload": false,
+      "sessions": [
+        {
+          "session": "A",
+          "date": "2027-01-12",
+          "name": "Easy run/walk",
+          "run_seconds": 540,
+          "walk_seconds": 120,
+          "repetitions": 3,
+          "main_seconds": 1980,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2580
+        },
+        {
+          "session": "B",
+          "date": "2027-01-14",
+          "name": "Easy run/walk",
+          "run_seconds": 540,
+          "walk_seconds": 120,
+          "repetitions": 3,
+          "main_seconds": 1980,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2580
+        },
+        {
+          "session": "C",
+          "date": "2027-01-17",
+          "name": "Extended easy run/walk",
+          "run_seconds": 540,
+          "walk_seconds": 120,
+          "repetitions": 4,
+          "main_seconds": 2640,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 3240
+        }
+      ]
+    },
+    {
+      "week": 11,
+      "phase": "race_preparation",
+      "deload": false,
+      "sessions": [
+        {
+          "session": "A",
+          "date": "2027-01-19",
+          "name": "Easy run/walk",
+          "run_seconds": 600,
+          "walk_seconds": 120,
+          "repetitions": 3,
+          "main_seconds": 2160,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2760
+        },
+        {
+          "session": "B",
+          "date": "2027-01-21",
+          "name": "Easy run/walk",
+          "run_seconds": 600,
+          "walk_seconds": 120,
+          "repetitions": 3,
+          "main_seconds": 2160,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 2760
+        },
+        {
+          "session": "C",
+          "date": "2027-01-24",
+          "name": "Extended easy run/walk",
+          "run_seconds": 600,
+          "walk_seconds": 120,
+          "repetitions": 4,
+          "main_seconds": 2880,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 3480
+        }
+      ]
+    },
+    {
+      "week": 12,
+      "phase": "taper",
+      "deload": false,
+      "sessions": [
+        {
+          "session": "A",
+          "date": "2027-01-26",
+          "name": "Easy run/walk",
+          "run_seconds": 480,
+          "walk_seconds": 120,
+          "repetitions": 2,
+          "main_seconds": 1200,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 1800
+        },
+        {
+          "session": "B",
+          "date": "2027-01-28",
+          "name": "Easy run/walk",
+          "run_seconds": 360,
+          "walk_seconds": 120,
+          "repetitions": 2,
+          "main_seconds": 960,
+          "warmup_seconds": 300,
+          "cooldown_seconds": 300,
+          "total_seconds": 1560
+        },
+        {
+          "session": "C",
+          "date": "2027-01-31",
+          "name": "First 5K completion event",
+          "distance_meters": 5000,
+          "elapsed_seconds": null,
+          "walk_breaks_allowed": true
+        }
+      ]
+    }
+  ]
+}

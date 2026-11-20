@@ -1,0 +1,116 @@
+{
+  "policy_id": "runsensei.5k.first_5k_run_walk.training_pace",
+  "version": "0.1.0",
+  "goal_family": "5k",
+  "plan_family": "first_5k_true_beginner_run_walk",
+  "title": "Beginner effort and talk-test pace policy",
+  "algorithm_ids": [
+    11
+  ],
+  "runner_eligibility": {
+    "eligible_profile": "Adult beginner working toward completing 5 kilometres with walking allowed, not a time goal",
+    "minimum_age_years": 18,
+    "can_walk_30_minutes_comfortably": true,
+    "current_training_requirement": "No running history or limited recent running; not suitable for advanced performance goals",
+    "do_not_auto_enroll_if": [
+      "current concerning symptoms or injury",
+      "user cannot comfortably walk 30 minutes",
+      "user requests a performance/time-based 5K plan",
+      "user is under 18"
+    ],
+    "note": "These are first-release product-scope gates, not medical clearance or diagnostic screening."
+  },
+  "required_inputs": [
+    "runner_reported_effort",
+    "plan_week"
+  ],
+  "training_rules": {
+    "primary_intensity_method": "self_reported_talk_test_and_RPE",
+    "running_rpe_min": 3,
+    "running_rpe_max": 4,
+    "walk_rpe_min": 1,
+    "walk_rpe_max": 3,
+    "talk_test": "During running bouts the user should be able to speak in complete sentences; if not, slow down or walk.",
+    "gps_pace_target_seconds_per_km": null,
+    "prescribed_heart_rate_zone": null,
+    "training_pace_formula": "NO_NUMERICAL_PACE_FORMULA_FOR_THIS_TRUE_BEGINNER_POLICY",
+    "display_text": "Comfortable effort; walking breaks are part of the workout.",
+    "allowed_post_workout_metrics": [
+      "actual_distance_meters",
+      "actual_average_pace_seconds_per_km",
+      "elapsed_seconds",
+      "perceived_exertion"
+    ],
+    "event_pace": "No target finish time; self-paced completion with walking allowed"
+  },
+  "fallback_rules": {
+    "missing_race_time": "EXPECTED; use talk test and easy effort, not derived pace",
+    "unreliable_gps": "Use timer and perceived effort; do not fabricate min/km targets",
+    "runner_cannot_talk_during_run": "Prompt reduction in pace or walking; persistent difficulty triggers repeat/reassessment"
+  },
+  "safety_constraints": {
+    "block_hard_pace_targets": true,
+    "do_not_require_race_time": true,
+    "avoid_prescribing_heart_rate_without_individual_assessment": true
+  },
+  "evidence_sources": [
+    {
+      "source_id": "nhs_couch_to_5k",
+      "type": "external_guidance",
+      "title": "NHS Better Health - Couch to 5K running plan",
+      "url": "https://www.nhs.uk/better-health/get-active/get-running-with-couch-to-5k/couch-to-5k-running-plan/",
+      "supports": "Beginner run/walk programming, 3 run days per week, rest days between runs, five-minute walking warm-up and cool-down, self-paced effort. NHS uses 9 weeks; this pack is an original 12-week proposal, not the NHS schedule."
+    },
+    {
+      "source_id": "nyrr_5k_conservative_pdf",
+      "type": "user_supplied_reference",
+      "title": "NYRR 5K Training Plan Conservative (12 Weeks)",
+      "local_file": "5k Training Plan Conservative.pdf",
+      "pages": [
+        1,
+        2,
+        3
+      ],
+      "supports": "Reference for RPE descriptors, structured sessions and 5K goal race. NOT a true zero-running beginner schedule: includes early speedwork and tempo sessions."
+    }
+  ],
+  "review_status": "draft",
+  "reviewer": {
+    "name": null,
+    "credentials": null,
+    "reviewed_at": null,
+    "approval_record_id": null
+  },
+  "test_cases": [
+    {
+      "id": "P11_NO_RACE_HISTORY",
+      "given": {
+        "recent_5k_time": null
+      },
+      "expected": {
+        "planned_min_per_km": null,
+        "intensity_method": "RPE_AND_TALK_TEST"
+      }
+    },
+    {
+      "id": "P11_HARD_EFFORT",
+      "given": {
+        "can_talk_in_sentences": false
+      },
+      "expected": {
+        "cue": "SLOW_DOWN_OR_WALK"
+      }
+    }
+  ],
+  "release_gate": {
+    "can_activate": false,
+    "requires": [
+      "qualified_running_coach_signoff",
+      "clinical_safety_review_for_symptom_handling",
+      "test_suite_pass",
+      "versioned_policy_catalog_approval"
+    ],
+    "on_missing_or_unapproved": "BLOCK_PLAN_GENERATION_NO_SILENT_FALLBACK"
+  },
+  "notes": "DRAFT. Numerical tables are original engineering proposals needing coaching validation. Do not describe as an NYRR or NHS exact plan."
+}

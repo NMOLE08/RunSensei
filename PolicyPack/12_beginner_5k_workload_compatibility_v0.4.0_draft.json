@@ -1,0 +1,145 @@
+{
+  "schemaVersion": "beginner-5k-workload-compatibility-v1",
+  "policyId": "runsensei.5k.beginner.workload-compatibility",
+  "version": "0.4.0-draft",
+  "lifecycle": "draft",
+  "releaseEligibility": "blocked",
+  "goal": "first_5k_completion",
+  "applicablePathways": [
+    {
+      "pathwayId": "true_beginner_fixed_12_week_run_walk",
+      "pathwayVersion": "0.1.0-draft",
+      "workoutPolicyPack": "runsensei.5k.first_5k_true_beginner_run_walk.pack@0.1.0-draft",
+      "requiredEvidence": ["adult_age_confirmed", "can_walk_30_minutes_comfortably", "health_concern", "available_training_days", "weekday_minute_limits", "plan_start_date"],
+      "numericRules": {
+        "minimumWalkMinutes": 30,
+        "maximumEvidenceAgeDays": 28,
+        "minimumContinuousRunMinutes": null,
+        "minimumWeeklyRunningMinutes": null,
+        "minimumLongestSessionMinutes": null
+      },
+      "notes": "The 30-minute walking declaration is an entry scope condition drawn from the existing pack and NHS-aligned return-to-running guidance. It is not medical clearance, a prediction of injury risk, or a proof that the authored run/walk table suits an individual."
+    },
+    {
+      "pathwayId": "continuous_running_beginner_fixed_12_week",
+      "pathwayVersion": "0.1.0-draft",
+      "workoutPolicyPack": "runsensei.5k.continuous_beginner.pack@0.1.0-draft",
+      "requiredEvidence": ["adult_age_confirmed", "can_walk_30_minutes_comfortably", "health_concern", "continuous_run_minutes", "weekly_running_minutes", "longest_recent_session_minutes", "available_training_days", "weekday_minute_limits", "plan_start_date"],
+      "numericRules": {
+        "minimumWalkMinutes": 30,
+        "maximumEvidenceAgeDays": 28,
+        "minimumContinuousRunMinutes": 20,
+        "minimumWeeklyRunningMinutes": 50,
+        "minimumLongestSessionMinutes": 20
+      },
+      "notes": "20/50/20 are original candidate comparators matching the continuous draft's Week 1 Session C main work (20 minutes) and Week 1 main-work total (50 minutes). They are not independently validated safety thresholds and require qualified coach approval."
+    }
+  ],
+  "rules": [
+    {
+      "id": "evidence_freshness_v1",
+      "condition": "When a dated running-history observation is supplied, its age must be no more than 28 days.",
+      "outcome": "insufficient_information",
+      "status": "original_candidate_requires_coach_review",
+      "evidenceIds": ["nhs-couch-to-5k", "running-injury-systematic-review"]
+    },
+    {
+      "id": "continuous_capacity_v1",
+      "condition": "Continuous pathway requires reported continuous running of at least 20 minutes.",
+      "outcome": "requires_review",
+      "status": "original_candidate_requires_coach_review",
+      "evidenceIds": ["continuous-pack-week-1"]
+    },
+    {
+      "id": "continuous_weekly_history_v1",
+      "condition": "Continuous pathway requires at least 50 recent weekly running minutes.",
+      "outcome": "requires_review",
+      "status": "original_candidate_requires_coach_review",
+      "evidenceIds": ["continuous-pack-week-1"]
+    },
+    {
+      "id": "continuous_longest_session_v1",
+      "condition": "Continuous pathway requires a recent longest running session of at least 20 minutes.",
+      "outcome": "requires_review",
+      "status": "original_candidate_requires_coach_review",
+      "evidenceIds": ["continuous-pack-week-1"]
+    },
+    {
+      "id": "run_walk_entry_v1",
+      "condition": "Run/walk pathway requires an adult declaration, comfortable 30-minute walking, no reported health concern, and an accepted three-day schedule.",
+      "outcome": "candidate_compatible_draft_only",
+      "status": "source_scope_plus_candidate_integration",
+      "evidenceIds": ["nhs-couch-to-5k", "berkshire-return-to-running"]
+    },
+    {
+      "id": "interruption_v1",
+      "condition": "Any reported interruption other than none requires review; there is no automatic re-entry rule.",
+      "outcome": "requires_review",
+      "status": "conservative_gap_preserved",
+      "evidenceIds": ["running-injury-systematic-review"]
+    },
+    {
+      "id": "weekday_time_v1",
+      "condition": "Each selected weekday limit must meet the exact scheduled full-session duration, including the 10-minute walk warm-up/cooldown.",
+      "outcome": "scheduling_incompatible",
+      "status": "factual_schedule_constraint",
+      "evidenceIds": ["nhs-couch-to-5k"]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "nhs-couch-to-5k",
+      "title": "NHS Better Health: Couch to 5K running plan",
+      "url": "https://www.nhs.uk/better-health/get-active/get-running-with-couch-to-5k/couch-to-5k-running-plan/",
+      "accessedOn": "2026-11-03",
+      "supports": "Three weekly beginner sessions, rest days, 5-minute walk warm-up/cooldown, and an initial timed run/walk pattern. NHS uses a separate 9-week programme and does not validate our 12-week tables or individual compatibility thresholds.",
+      "classification": "direct_structure_reference"
+    },
+    {
+      "id": "berkshire-return-to-running",
+      "title": "Berkshire Healthcare NHS Foundation Trust: Return to running programme",
+      "url": "https://www.berkshirehealthcare.nhs.uk/advice/return-to-running-programme",
+      "accessedOn": "2026-11-03",
+      "supports": "A general guide says people should be able to walk for 30 minutes and uses two to three sessions weekly with 24 hours between. It is return-to-running guidance and says individual physiotherapy advice may differ.",
+      "classification": "direct_context_reference"
+    },
+    {
+      "id": "running-injury-systematic-review",
+      "title": "The Association Between Running Injuries and Training Parameters: A Systematic Review",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/34478518/",
+      "accessedOn": "2026-11-03",
+      "supports": "Specific training-parameter and injury relationships were inconsistent. It supports caution and review, not a universal safe progression threshold.",
+      "classification": "risk_context_only"
+    },
+    {
+      "id": "continuous-pack-week-1",
+      "title": "RunSensei Continuous-Running Beginner 5K Pack, Week 1",
+      "url": "local:PolicyPack/continuous_5k_beginner",
+      "accessedOn": "2026-11-03",
+      "supports": "The proposed continuous pack has 15/15/20 minutes of Week 1 main work, 50 minutes total. This is the source of candidate comparator values, not external validation.",
+      "classification": "original_candidate_value"
+    }
+  ],
+  "fallbacks": {
+    "missingEvidence": "Return insufficient_information; do not infer capacity from missing answers.",
+    "contradictoryEvidence": "Return conflicting_evidence; do not average or select a pathway.",
+    "outdatedEvidence": "Return insufficient_information and request a current observation.",
+    "healthConcern": "Return health_hold; this is not a diagnosis or medical clearance.",
+    "interruption": "Return requires_review; do not automatically re-enter or regress a programme.",
+    "productionActivation": "Blocked. Candidate compatibility does not authorize plan creation or activation."
+  },
+  "reviewer": null,
+  "reviewDate": null,
+  "approvalScope": null,
+  "validationCases": [
+    "run_walk_candidate_compatible_draft_only",
+    "continuous_candidate_compatible_draft_only",
+    "continuous_capacity_below_week_1",
+    "missing_weekly_history",
+    "conflicting_longest_and_weekly_minutes",
+    "recent_interruption_requires_review",
+    "weekday_limit_inadequate",
+    "draft_policy_cannot_activate"
+  ],
+  "notes": "Draft research policy. Numeric values are either existing programme values or original candidate comparators. It cannot be used as medical advice or production coaching until qualified running-coach review and release approval occur."
+}

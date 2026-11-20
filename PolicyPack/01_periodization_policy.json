@@ -1,0 +1,156 @@
+{
+  "policy_id": "runsensei.5k.first_5k_run_walk.periodization",
+  "version": "0.1.0",
+  "goal_family": "5k",
+  "plan_family": "first_5k_true_beginner_run_walk",
+  "title": "Beginner 5K periodization",
+  "algorithm_ids": [
+    6
+  ],
+  "runner_eligibility": {
+    "eligible_profile": "Adult beginner working toward completing 5 kilometres with walking allowed, not a time goal",
+    "minimum_age_years": 18,
+    "can_walk_30_minutes_comfortably": true,
+    "current_training_requirement": "No running history or limited recent running; not suitable for advanced performance goals",
+    "do_not_auto_enroll_if": [
+      "current concerning symptoms or injury",
+      "user cannot comfortably walk 30 minutes",
+      "user requests a performance/time-based 5K plan",
+      "user is under 18"
+    ],
+    "note": "These are first-release product-scope gates, not medical clearance or diagnostic screening."
+  },
+  "required_inputs": [
+    "date_of_plan_start",
+    "goal_type",
+    "adult_age_confirmed",
+    "can_walk_30_minutes_comfortably",
+    "available_run_days",
+    "reported_symptoms_or_injury"
+  ],
+  "training_rules": {
+    "plan_weeks": 12,
+    "goal_definition": "First completed 5 km on foot, including walk breaks; completion is not guaranteed",
+    "week_1_start_rule": "Week 1 starts on next applicable Monday after chosen start date; schedule is aligned to calendar weeks",
+    "phase_schedule": [
+      {
+        "phase": "base",
+        "weeks": [
+          1,
+          4
+        ]
+      },
+      {
+        "phase": "development",
+        "weeks": [
+          5,
+          8
+        ]
+      },
+      {
+        "phase": "race_preparation",
+        "weeks": [
+          9,
+          11
+        ]
+      },
+      {
+        "phase": "taper",
+        "weeks": [
+          12,
+          12
+        ]
+      }
+    ],
+    "recovery_weeks": [
+      4,
+      8
+    ],
+    "event_week": 12,
+    "event_day_default": "Sunday",
+    "taper_rule": "Week 12 contains two reduced-volume sessions and a separate 5 km completion event; do not use fixed timed mileage for the event",
+    "phase_assignment_rule": "Pure lookup by week index in immutable 12-week table; no LLM arithmetic"
+  },
+  "fallback_rules": {
+    "goal_date_missing": "Use Sunday of Week 12 as proposed event date after user confirms start date",
+    "requested_duration_not_12_weeks": "BLOCK_UNSUPPORTED_DURATION; never stretch a template silently",
+    "goal_date_not_on_week_12_default_day": "Require scheduling policy #13 to fit race date or block and request reschedule; no automatic truncation"
+  },
+  "safety_constraints": {
+    "min_run_days_per_week": 3,
+    "max_run_days_per_week": 3,
+    "race_week_must_be_week_12": true,
+    "never_skip_deload_week_automatically": true,
+    "week_sequence_complete": true
+  },
+  "evidence_sources": [
+    {
+      "source_id": "nhs_couch_to_5k",
+      "type": "external_guidance",
+      "title": "NHS Better Health - Couch to 5K running plan",
+      "url": "https://www.nhs.uk/better-health/get-active/get-running-with-couch-to-5k/couch-to-5k-running-plan/",
+      "supports": "Beginner run/walk programming, 3 run days per week, rest days between runs, five-minute walking warm-up and cool-down, self-paced effort. NHS uses 9 weeks; this pack is an original 12-week proposal, not the NHS schedule."
+    },
+    {
+      "source_id": "nyrr_5k_conservative_pdf",
+      "type": "user_supplied_reference",
+      "title": "NYRR 5K Training Plan Conservative (12 Weeks)",
+      "local_file": "5k Training Plan Conservative.pdf",
+      "pages": [
+        1,
+        2,
+        3
+      ],
+      "supports": "Reference for RPE descriptors, structured sessions and 5K goal race. NOT a true zero-running beginner schedule: includes early speedwork and tempo sessions."
+    }
+  ],
+  "review_status": "draft",
+  "reviewer": {
+    "name": null,
+    "credentials": null,
+    "reviewed_at": null,
+    "approval_record_id": null
+  },
+  "test_cases": [
+    {
+      "id": "P6_PHASE_MAP",
+      "given": {
+        "week": 8
+      },
+      "expected": {
+        "phase": "development",
+        "is_deload": true
+      }
+    },
+    {
+      "id": "P6_EVENT",
+      "given": {
+        "week": 12
+      },
+      "expected": {
+        "phase": "taper",
+        "event_distance_meters": 5000
+      }
+    },
+    {
+      "id": "P6_INVALID_DURATION",
+      "given": {
+        "requested_plan_weeks": 8
+      },
+      "expected": {
+        "decision": "BLOCK_UNSUPPORTED_DURATION"
+      }
+    }
+  ],
+  "release_gate": {
+    "can_activate": false,
+    "requires": [
+      "qualified_running_coach_signoff",
+      "clinical_safety_review_for_symptom_handling",
+      "test_suite_pass",
+      "versioned_policy_catalog_approval"
+    ],
+    "on_missing_or_unapproved": "BLOCK_PLAN_GENERATION_NO_SILENT_FALLBACK"
+  },
+  "notes": "DRAFT. Numerical tables are original engineering proposals needing coaching validation. Do not describe as an NYRR or NHS exact plan."
+}

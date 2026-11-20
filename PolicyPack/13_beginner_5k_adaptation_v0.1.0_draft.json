@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "beginner-5k-adaptation-policy-v1",
+  "policyId": "runsensei.5k.beginner.adaptation",
+  "version": "0.1.0-draft",
+  "lifecycle": "draft",
+  "releaseEligibility": "blocked",
+  "appliesTo": {
+    "goal": "first_5k_completion",
+    "pathways": ["true_beginner_fixed_12_week_run_walk@0.1.0-draft", "continuous_running_beginner_fixed_12_week@0.1.0-draft"],
+    "requiresPolicyReferences": ["runsensei.5k.beginner.workload-compatibility@0.4.0-draft"]
+  },
+  "decisionPrecedence": ["health_hold", "critical_data_integrity", "fatigue_or_interruption", "missing_evidence", "policy_reference_gap", "repeated_difficult_pattern", "partial_or_missed", "isolated_difficult_feedback", "completed_week"],
+  "rules": [
+    {"id":"health_hold_v1","when":"Any pain_or_injury_concern is present.","decision":"hold_for_review","evidenceRequired":["health_hold_signal"],"fallback":"No change request.","status":"conservative_safety_rule","source":"NHS symptom guidance is contextual; not medical diagnosis."},
+    {"id":"integrity_hold_v1","when":"A critical data-quality issue or historical policy-reference mismatch is present.","decision":"hold_for_review","evidenceRequired":["data_quality_issues"],"fallback":"No change request.","status":"engineering_integrity_rule","source":"System D data integrity."},
+    {"id":"fatigue_interruption_hold_v1","when":"Unusual fatigue or a reported interruption is present.","decision":"hold_for_review","evidenceRequired":["fatigue","interruption"],"fallback":"No change request.","status":"original_candidate_requires_coach_review","source":"Risk literature supports caution, not a numeric rule."},
+    {"id":"missing_evidence_v1","when":"Any scheduled outcome is unreported or a required performance fact is unknown.","decision":"insufficient_evidence","evidenceRequired":["weekly_summary","system_d_analysis"],"fallback":"No change request.","status":"factual_data_rule","source":"Missing data is not successful completion."},
+    {"id":"repeated_difficult_pattern_v1","when":"Two or more current completed/partial outcomes report too_difficult in the reviewed window.","decision":"reduce_candidate","evidenceRequired":["recent_trend","system_d_analysis"],"fallback":"A lower prescription is not authored; no change request.","status":"original_candidate_requires_coach_review","source":"Candidate count, not validated threshold."},
+    {"id":"partial_or_missed_v1","when":"A reported partial or missed outcome has no health concern or critical data issue.","decision":"repeat_candidate","evidenceRequired":["weekly_summary"],"fallback":"No make-up workload; no change request.","status":"original_candidate_requires_coach_review","source":"Beginner programmes permit repetition contextually; exact RunSensei action requires review."},
+    {"id":"isolated_difficult_v1","when":"One difficult outcome is present without a repeated pattern.","decision":"maintain_candidate","evidenceRequired":["recent_trend"],"fallback":"No progression or decline inference from one observation.","status":"conservative_candidate","source":"No universal response threshold."},
+    {"id":"completed_week_v1","when":"Every scheduled outcome is completed, no warnings/holds exist, and the authored next stage is available.","decision":"advance_candidate","evidenceRequired":["weekly_summary","historical_policy_references"],"fallback":"Only a reviewed System B/C proposal may materialize a next stage.","status":"original_candidate_requires_coach_review","source":"Candidate rule; not coaching approval."}
+  ],
+  "safetyConstraints": {"neverMakeUpMissedWork":true,"neverInferSuccessFromMissingData":true,"neverChangePlan":true,"healthHoldOverridesAll":true,"requiresReviewedNumericalRulesForProposalRequest":true},
+  "evidence": [
+    {"id":"nhs-couch-to-5k","url":"https://www.nhs.uk/better-health/get-active/get-running-with-couch-to-5k/","use":"Three weekly sessions and pacing at an individual's level; does not validate RunSensei decision thresholds."},
+    {"id":"running-injury-systematic-review","url":"https://pubmed.ncbi.nlm.nih.gov/34478518/","use":"Specific load/injury relationships are inconsistent; supports cautious review, not universal adaptation formulas."},
+    {"id":"system-d-facts","url":"local:src/domain/performance","use":"Engineering provenance and data-quality behavior."}
+  ],
+  "reviewer": null,
+  "reviewDate": null,
+  "approvalScope": null,
+  "notes":"Draft-only decision policy. Passing tests does not establish coaching safety. No decision can alter or activate a plan."
+}

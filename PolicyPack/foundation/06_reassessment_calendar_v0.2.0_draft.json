@@ -1,0 +1,10 @@
+{
+  "id": "runsensei.foundation.block_reassessment",
+  "version": "0.2.0-draft",
+  "inheritsRules": "runsensei.foundation.block_reassessment@0.1.0-draft",
+  "nextPolicy": "runsensei.foundation.multiweek@0.3.0-draft",
+  "reviewer": null,
+  "productionEligible": false,
+  "status": "draft",
+  "scope": "Apply unchanged completion, evidence, health, interruption and reassessment rules to calendar-only foundation v0.3. No automatic advancement or production authorization."
+}

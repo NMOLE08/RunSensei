@@ -60,3 +60,15 @@ Phase 2 remains **incomplete**: connect the structured model and catalog to sele
 - [ ] Verify the full onboarding → log → review → apply → restart → reminders journey on a device, including large text and accessibility. Automated tests do not establish device behavior.
 
 No migration was needed for the new check-in: structured feedback is versioned JSON in the existing nullable `reported_effort` field; historical free text remains intact and is not assumed to be a structured answer. Numerical demo schedule limits are fixtures and are not production policy. Phases 3 and 4 remain incomplete.
+
+## Research foundation outcomes and reassessment — 2026-11-07
+
+- [x] Additive migration 16: account-owned immutable research blocks, append-only corrected outcomes and decision provenance; no production plan insertion.
+- [x] Explicit manual, activity-log and standalone GPS associations; unknown running time preserved, walking remains a different activity, duplicate activity reuse rejected.
+- [x] Existing System D factual comparisons and independent foundation validation reused. New original draft reassessment policy supports recalculated foundation successors and demonstrated walk/run-to-continuous foundation transitions.
+- [x] Android Plan journal, saved-block route, correction history, explicit current-capacity confirmation and next-block preview wired behind existing development opt-in guard.
+- [x] Synthetic complete service flows and JSON evidence for current, beginner and returning runners, insufficient evidence and health hold. TypeScript and ESLint pass; 75 Jest suites / 423 tests pass; three applicable Python policy validators pass.
+- [ ] Physical Android acceptance pending: ADB could not access its settings directory. No real phone/account evidence was changed.
+- [ ] Coaching review, health-clearance policy, incomplete-block adaptations and transitions beyond foundation remain blocked. Production authorization unchanged.
+
+Full changed-file list, proof artifacts, limitations and Android checklist: [research-foundation-outcomes.md](research-foundation-outcomes.md).

@@ -5,4 +5,6 @@ export interface SqlDatabase {
   getFirst<T>(sql: string, params?: SqlValue[]): Promise<T | null>;
   getAll<T>(sql: string, params?: SqlValue[]): Promise<T[]>;
   transaction<T>(operation: () => Promise<T>): Promise<T>;
+  /** Isolated connection: publication writes must not join unrelated GPS transactions. */
+  exclusiveTransaction?<T>(operation: (database: SqlDatabase) => Promise<T>): Promise<T>;
 }

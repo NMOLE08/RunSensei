@@ -5,6 +5,7 @@ import { migrate } from '@/data/migrations';
 export const checkpointLabels = {
   permission_requested: 'GPS permission requested', permission_denied: 'GPS permission denied', services_disabled: 'Location services are off', permission_granted: 'GPS permission granted', gps_acquiring: 'Waiting for a usable GPS fix',
   recording_started: 'Workout started', timer_started: 'Timer-only workout started', gps_ready: 'GPS signal received', gps_weak: 'GPS signal is weak or unavailable', gps_error: 'GPS updates stopped',
+  gps_approximate_permission: 'Android approximate location is enabled',
   distance_started: 'Accepted GPS movement started adding distance', pace_available: 'Current pace became available', gps_gap: 'GPS gap started a new route segment', gps_accuracy_rejected: 'A GPS sample was rejected for poor accuracy', gps_stale_rejected: 'A stale or out-of-order GPS sample was rejected', gps_jitter_filtered: 'Stationary GPS jitter was filtered', gps_jump_rejected: 'An implausible GPS jump was rejected',
   progress_saved: 'Workout progress saved', progress_failed: 'Could not save workout progress', paused: 'Workout paused', background_paused: 'App left the screen; workout paused', resumed: 'Workout resumed',
   recovered: 'Interrupted workout recovered', recording_saved: 'Workout recording saved', recording_failed: 'Could not finish saving workout', discarded: 'Workout discarded',

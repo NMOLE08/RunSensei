@@ -1,14 +1,21 @@
 import { useState } from 'react';
-import { router } from 'expo-router';
-import { AppText, Button, Card, Field, Screen } from '@/design/components';
-import { authCallbackUrl, supabase, signInWithGoogle } from '@/services/auth/supabase';
-import { saveLocalAccount } from '@/application/localAccount';
+import { AppText, Button, Card, ContourDecoration, PageHeader, Screen } from '@/design/components';
+import { signInWithGoogle } from '@/services/auth/supabase';
+import { useAuth } from '@/features/auth/AuthProvider';
+import { AnimatedIcon } from '@/design/AnimatedIcon';
+import { TORTO_NAME } from '@/config/productIdentity';
+import { colors, spacing } from '@/design/tokens';
+import { StyleSheet, View } from 'react-native';
 
 export default function AuthScreen() {
-  const [mode, setMode] = useState<'create' | 'signin'>('create'); const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [message, setMessage] = useState<string | null>(null); const [busy, setBusy] = useState(false);
-  const run = async (action: () => Promise<{ error: { message: string } | null } | void>) => { if (busy) return; try { setBusy(true); setMessage(null); const result = await action(); if (result && result.error) throw result.error; const { data } = await supabase.auth.getUser(); if (!data.user) throw new Error('Check your email to confirm the account, then sign in.'); await saveLocalAccount({ id: data.user.id, email: data.user.email ?? email, displayName: null, phone: null, dateOfBirth: null }); router.replace('/onboarding/baseline'); } catch (error) { setMessage(error instanceof Error ? error.message : 'Sign-in could not be completed.'); } finally { setBusy(false); } };
-  const enterDemo = async () => { try { setBusy(true); setMessage(null); await saveLocalAccount({ id: 'demo-local', email: 'demo@aisensei.local', displayName: 'Demo runner', phone: null, dateOfBirth: null }); router.replace('/onboarding/baseline'); } catch (error) { setMessage(error instanceof Error ? error.message : 'Demo access could not be started.'); } finally { setBusy(false); } };
-  const primary = mode === 'create' ? () => supabase.auth.signUp({ email, password, options: { emailRedirectTo: authCallbackUrl() } }) : () => supabase.auth.signInWithPassword({ email, password });
-  const submit = () => { if (__DEV__ && mode === 'signin' && email.trim().toLowerCase() === 'demo@aisensei.local' && password === '1234') { void enterDemo(); return; } void run(primary); };
-  return <Screen><AppText variant="meta">ACCOUNT / SUPABASE</AppText><AppText variant="title">Welcome to AiSensei</AppText><Card><AppText>{mode === 'create' ? 'New here? Create your account to save your plan on this device.' : 'Welcome back. Sign in to continue with your saved plan.'}</AppText><Button label={mode === 'create' ? 'I already have an account' : 'I need to create an account'} onPress={() => { setMode((current) => current === 'create' ? 'signin' : 'create'); setMessage(null); }} tone="secondary" /><Field autoCapitalize="none" autoComplete="email" keyboardType="email-address" label="Email" onChangeText={setEmail} value={email} /><Field autoCapitalize="none" autoComplete={mode === 'create' ? 'new-password' : 'password'} label="Password" onChangeText={setPassword} secureTextEntry value={password} /><Button label={busy ? 'Please wait…' : mode === 'create' ? 'Create account' : 'Sign in'} onPress={submit} />{__DEV__ && <Button label="Use local demo account" onPress={() => { setMode('signin'); setEmail('demo@aisensei.local'); setPassword('1234'); void enterDemo(); }} tone="secondary" />}<Button label="Continue with Google" onPress={() => { void run(signInWithGoogle); }} tone="secondary" /></Card>{message && <AppText accessibilityLiveRegion="polite">{message}</AppText>}<AppText variant="meta">If email confirmation is enabled, confirm your email first, then sign in. Google requires the provider and aisensei://auth/callback redirect URL in Supabase.</AppText>{__DEV__ && <AppText variant="meta">Demo only: demo@aisensei.local / 1234. It is local to this device and does not create a Supabase account.</AppText>}</Screen>;
+  const [message, setMessage] = useState<string | null>(null); const [busy, setBusy] = useState(false); const auth = useAuth();
+  const submit = async () => { if (busy) return; try { setBusy(true); setMessage(null); await signInWithGoogle(); await auth.retry(); } catch (error) { setMessage(error instanceof Error ? error.message : 'Google sign-in could not be completed.'); } finally { setBusy(false); } };
+  return <Screen>
+    <View style={styles.hero}><ContourDecoration /><View style={styles.heroIcon}><AnimatedIcon name="walk" size={58} active /></View><PageHeader eyebrow={TORTO_NAME.toUpperCase()} title="Run your way." description="Your training, activity history, and progress—securely connected to you." /></View>
+    <Card tone="soft"><AppText variant="section">One account. Every run.</AppText><AppText style={styles.copy}>Continue with Google to start fresh or pick up exactly where you left off.</AppText><Button label={busy ? 'Opening Google…' : 'Continue with Google'} tone="accent" onPress={() => { void submit(); }} /></Card>
+    {message && <Card style={styles.message}><AppText accessibilityLiveRegion="polite">{message}</AppText></Card>}
+    <AppText style={styles.helper}>{TORTO_NAME} requires a Google account. We never receive or store your Google password.</AppText>
+  </Screen>;
 }
+
+const styles = StyleSheet.create({ hero: { backgroundColor: colors.butterWash, borderRadius: 32, gap: spacing.md, minHeight: 330, overflow: 'hidden', padding: spacing.lg, position: 'relative' }, heroIcon: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: colors.surface, borderRadius: 36, height: 72, justifyContent: 'center', width: 72 }, copy: { color: colors.mutedInk }, helper: { color: colors.mutedInk, fontSize: 13, lineHeight: 19, textAlign: 'center' }, message: { backgroundColor: colors.warningWash, borderColor: colors.warning } });

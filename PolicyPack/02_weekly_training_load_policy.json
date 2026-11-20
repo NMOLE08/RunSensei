@@ -1,0 +1,233 @@
+{
+  "policy_id": "runsensei.5k.first_5k_run_walk.weekly_load",
+  "version": "0.1.0",
+  "goal_family": "5k",
+  "plan_family": "first_5k_true_beginner_run_walk",
+  "title": "Weekly training load in seconds, not predicted kilometres",
+  "algorithm_ids": [
+    7
+  ],
+  "runner_eligibility": {
+    "eligible_profile": "Adult beginner working toward completing 5 kilometres with walking allowed, not a time goal",
+    "minimum_age_years": 18,
+    "can_walk_30_minutes_comfortably": true,
+    "current_training_requirement": "No running history or limited recent running; not suitable for advanced performance goals",
+    "do_not_auto_enroll_if": [
+      "current concerning symptoms or injury",
+      "user cannot comfortably walk 30 minutes",
+      "user requests a performance/time-based 5K plan",
+      "user is under 18"
+    ],
+    "note": "These are first-release product-scope gates, not medical clearance or diagnostic screening."
+  },
+  "required_inputs": [
+    "plan_week",
+    "approved_workout_structure_policy",
+    "run_walk_completion_state",
+    "reported_symptoms_or_injury"
+  ],
+  "training_rules": {
+    "primary_unit": "seconds_of_main_run_walk_movement",
+    "secondary_unit": "seconds_of_actual_running",
+    "exclude_from_main_budget": [
+      "warmup_walking",
+      "cooldown_walking",
+      "optional_nonrunning_strength"
+    ],
+    "week_by_week_budget": [
+      {
+        "week": 1,
+        "planned_main_movement_seconds": 3420,
+        "known_pre_event_main_seconds": null,
+        "planned_running_seconds": 1140,
+        "total_training_minutes_including_event": 87.0,
+        "special_week_type": "normal"
+      },
+      {
+        "week": 2,
+        "planned_main_movement_seconds": 3990,
+        "known_pre_event_main_seconds": null,
+        "planned_running_seconds": 1710,
+        "total_training_minutes_including_event": 96.5,
+        "special_week_type": "normal"
+      },
+      {
+        "week": 3,
+        "planned_main_movement_seconds": 4560,
+        "known_pre_event_main_seconds": null,
+        "planned_running_seconds": 2280,
+        "total_training_minutes_including_event": 106.0,
+        "special_week_type": "normal"
+      },
+      {
+        "week": 4,
+        "planned_main_movement_seconds": 3840,
+        "known_pre_event_main_seconds": null,
+        "planned_running_seconds": 1920,
+        "total_training_minutes_including_event": 94.0,
+        "special_week_type": "deload"
+      },
+      {
+        "week": 5,
+        "planned_main_movement_seconds": 4800,
+        "known_pre_event_main_seconds": null,
+        "planned_running_seconds": 2880,
+        "total_training_minutes_including_event": 110.0,
+        "special_week_type": "normal"
+      },
+      {
+        "week": 6,
+        "planned_main_movement_seconds": 5760,
+        "known_pre_event_main_seconds": null,
+        "planned_running_seconds": 3840,
+        "total_training_minutes_including_event": 126.0,
+        "special_week_type": "normal"
+      },
+      {
+        "week": 7,
+        "planned_main_movement_seconds": 6300,
+        "known_pre_event_main_seconds": null,
+        "planned_running_seconds": 4500,
+        "total_training_minutes_including_event": 135.0,
+        "special_week_type": "normal"
+      },
+      {
+        "week": 8,
+        "planned_main_movement_seconds": 4680,
+        "known_pre_event_main_seconds": null,
+        "planned_running_seconds": 3120,
+        "total_training_minutes_including_event": 108.0,
+        "special_week_type": "deload"
+      },
+      {
+        "week": 9,
+        "planned_main_movement_seconds": 6240,
+        "known_pre_event_main_seconds": null,
+        "planned_running_seconds": 4680,
+        "total_training_minutes_including_event": 134.0,
+        "special_week_type": "normal"
+      },
+      {
+        "week": 10,
+        "planned_main_movement_seconds": 6600,
+        "known_pre_event_main_seconds": null,
+        "planned_running_seconds": 5400,
+        "total_training_minutes_including_event": 140.0,
+        "special_week_type": "normal"
+      },
+      {
+        "week": 11,
+        "planned_main_movement_seconds": 7200,
+        "known_pre_event_main_seconds": null,
+        "planned_running_seconds": 6000,
+        "total_training_minutes_including_event": 150.0,
+        "special_week_type": "normal"
+      },
+      {
+        "week": 12,
+        "planned_main_movement_seconds": null,
+        "known_pre_event_main_seconds": 2160,
+        "planned_running_seconds": null,
+        "total_training_minutes_including_event": null,
+        "special_week_type": "event_week"
+      }
+    ],
+    "initial_week_main_seconds": 3420,
+    "progression_strategy": "reviewed_exact_schedule_lookup_not_generic_10_percent_rule",
+    "hard_cap_check": "For weeks other than deload/event, flag increases in main movement above 20% of last higher non-deload weekly main budget; this 20% is an unvalidated engineering test threshold, not a universal safety prescription.",
+    "recovery_week_rule": "Week 4 and Week 8 main movement is below the prior week; the recovery-week workload must not be replaced by the engine with missed work.",
+    "week_12_total_training_minutes": "unknown_until_5k_event_completed",
+    "distance_mode": "DO_NOT_INFER_KILOMETRES_FROM_MINUTES_WITHOUT_RELIABLE_PACE",
+    "run_minutes_vs_main_minutes": "Run/walk movement includes walking recoveries. Report running and total movement separately."
+  },
+  "fallback_rules": {
+    "missing_pace": "Keep all training in timed intervals; pace and distance projection remain absent",
+    "failed_prior_week": "Offer repeat-week or coach-reviewed regression; never advance automatically when pain or significant difficulty is reported",
+    "missing_previous_history": "Use minimum beginner week-1 lookup only after eligibility check"
+  },
+  "safety_constraints": {
+    "no_mileage_guesses": true,
+    "single_source_of_truth_for_steps": "workout_structure_policy",
+    "minimum_movement_seconds": 0,
+    "event_duration_must_be_null_until_recorded": true,
+    "require_exact_budget_reconciliation": true
+  },
+  "evidence_sources": [
+    {
+      "source_id": "nhs_couch_to_5k",
+      "type": "external_guidance",
+      "title": "NHS Better Health - Couch to 5K running plan",
+      "url": "https://www.nhs.uk/better-health/get-active/get-running-with-couch-to-5k/couch-to-5k-running-plan/",
+      "supports": "Beginner run/walk programming, 3 run days per week, rest days between runs, five-minute walking warm-up and cool-down, self-paced effort. NHS uses 9 weeks; this pack is an original 12-week proposal, not the NHS schedule."
+    },
+    {
+      "source_id": "nhs_running_injuries",
+      "type": "external_guidance",
+      "title": "NHS - Knee pain and other running injuries",
+      "url": "https://www.nhs.uk/live-well/exercise/knee-pain-and-other-running-injuries/",
+      "supports": "Build up gradually, warm up and cool down, avoid running through pain; not a source of exact numeric progression limits."
+    },
+    {
+      "source_id": "nyrr_5k_conservative_pdf",
+      "type": "user_supplied_reference",
+      "title": "NYRR 5K Training Plan Conservative (12 Weeks)",
+      "local_file": "5k Training Plan Conservative.pdf",
+      "pages": [
+        1,
+        2,
+        3
+      ],
+      "supports": "Reference for RPE descriptors, structured sessions and 5K goal race. NOT a true zero-running beginner schedule: includes early speedwork and tempo sessions."
+    }
+  ],
+  "review_status": "draft",
+  "reviewer": {
+    "name": null,
+    "credentials": null,
+    "reviewed_at": null,
+    "approval_record_id": null
+  },
+  "test_cases": [
+    {
+      "id": "P7_W1_TOTAL",
+      "given": {
+        "week": 1
+      },
+      "expected": {
+        "planned_main_movement_seconds": 3420,
+        "total_training_minutes_including_event": 87
+      }
+    },
+    {
+      "id": "P7_W4_RECOVERY",
+      "given": {
+        "week": 4
+      },
+      "expected": {
+        "main_budget_less_than_week_3": true
+      }
+    },
+    {
+      "id": "P7_WEEK12",
+      "given": {
+        "week": 12
+      },
+      "expected": {
+        "planned_main_movement_seconds": null,
+        "known_pre_event_main_seconds": 2160,
+        "total_training_minutes_including_event": null
+      }
+    }
+  ],
+  "release_gate": {
+    "can_activate": false,
+    "requires": [
+      "qualified_running_coach_signoff",
+      "clinical_safety_review_for_symptom_handling",
+      "test_suite_pass",
+      "versioned_policy_catalog_approval"
+    ],
+    "on_missing_or_unapproved": "BLOCK_PLAN_GENERATION_NO_SILENT_FALLBACK"
+  },
+  "notes": "DRAFT. Numerical tables are original engineering proposals needing coaching validation. Do not describe as an NYRR or NHS exact plan."
+}

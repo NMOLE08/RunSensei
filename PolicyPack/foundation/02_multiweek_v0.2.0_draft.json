@@ -1,0 +1,28 @@
+{
+  "policy_id": "runsensei.foundation.multiweek",
+  "version": "0.2.0-draft",
+  "review_status": "draft",
+  "reviewer": null,
+  "production_eligible": false,
+  "classification": "original_candidate_requires_qualified_review",
+  "weeks": 4,
+  "supported_frequency": [2, 3],
+  "minimum_rest_days": 1,
+  "warmup_walk_seconds": 300,
+  "cooldown_walk_seconds": 300,
+  "walking_recovery_seconds": 60,
+  "additional_running_seconds_per_session_by_week": [0, 60, 120, 0],
+  "recovery_weeks": [4],
+  "rules": {
+    "entry": "Explicitly confirmed current repeatable weekly running seconds and continuous running seconds are required in every context. Beginner means short demonstrated run intervals, not absent evidence. A returning runner must supply newly demonstrated capacity after the break. Historical performance is excluded.",
+    "frequency": "Runner explicitly selects 2 or 3 sessions within actual availability; never infer desired frequency from available weekdays.",
+    "workload": "Distribute current weekly running seconds equally, placing remainder seconds in earlier slots. Add the authored per-session seconds for each stage. Week 4 returns to initial running load. These are original review candidates, not validated progression limits.",
+    "structure": "Currently training uses continuous easy running bounded by confirmed continuous capacity. Beginner and non-health return use consecutive running intervals each no longer than confirmed continuous capacity, separated by 60-second walks. No walking recovery after the last running interval. Warm-up and cooldown are walking.",
+    "advancement": "All future stages are conditional research illustrations. Advancement requires fresh performance and health reassessment. No automatic advancement is authorized.",
+    "transition": "After week 4, reassess current capacity against the exact goal-specific policy. Completing scheduled weeks alone never establishes readiness.",
+    "health": "Health-related interruptions, pain and illness require review. Break length does not prescribe a reduction.",
+    "higher_frequency": "Four or more workouts require another authored policy; extra available days are scheduling alternatives."
+  },
+  "evidence_sources": [],
+  "limitations": ["All numbers are original candidate values requiring qualified review", "Added running and walking loads are unreviewed", "No automatic advancement or goal transition", "No zero-evidence starting prescription", "No race-readiness or fixed-date guarantee"]
+}

@@ -1,0 +1,13 @@
+{
+  "policyId": "torto.5k.beginner.calendar_availability",
+  "version": "0.5.0-draft",
+  "supersedesAvailabilityRequirementOf": "runsensei.5k.beginner.workload-compatibility@0.4.0-draft",
+  "availabilityTimeRequirement": "not_collected",
+  "scope": "Both existing beginner 5K research pathways; all other compatibility and workout rules remain inherited unchanged.",
+  "scheduling": "Preserve authored order, recovery, unavailable dates and fixed goal date; prefer unique longest full-duration session placement. Unknown event duration remains unknown.",
+  "personalTimeFeasibility": "not_assessed",
+  "reviewStatus": "draft",
+  "reviewer": null,
+  "productionEligible": false,
+  "approvalScope": null
+}

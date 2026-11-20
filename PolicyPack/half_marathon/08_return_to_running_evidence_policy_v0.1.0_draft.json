@@ -1,0 +1,30 @@
+{
+  "policy_id": "runsensei.half_marathon.return_to_running_evidence",
+  "version": "0.1.0-draft",
+  "goal_family": "half_marathon",
+  "review_status": "draft",
+  "release_gate": { "can_activate": false },
+  "provenance": {
+    "classification": "original_candidate_requires_qualified_coach_review",
+    "source_context": ["docs/training-policy.md: sustained interruption requires reassessment and an approved re-entry variant"],
+    "limitations": "This policy classifies evidence and readiness only. It contains no detraining formula, workload reduction, or return-to-running prescription."
+  },
+  "required_inputs": ["current_training_status", "last_running_date_when_applicable", "interruption_reason_when_returning", "current_capacity_confirmation", "health_concern", "historical_running_evidence"],
+  "states": {
+    "currently_training": "An explicit current-capacity confirmation permits supplied capacity facts to be evaluated by an authored preparation policy.",
+    "returning_after_break": "Historical evidence is retained, but requires an authored return-to-running pathway before it can seed a workload.",
+    "first_time_runner": "Requires an authored foundation-building pathway before a half-marathon workload can be proposed.",
+    "insufficient_current_evidence": "The runner must add or confirm current context; missing evidence is not interpreted as zero.",
+    "health_review_required": "Health or injury-related information blocks generation and follows the existing review pathway."
+  },
+  "rules": {
+    "historical_records": "Preserve historical running records and their original dates.",
+    "current_baseline": "Use historical workload values as a current workload baseline only after explicit current-capacity confirmation and currently_training status.",
+    "returning": "Do not infer a workload or reduction from time away. Return policy_gap:return_to_running_pathway_not_authored until an exact reviewed pathway exists.",
+    "first_time": "Do not infer a foundation prescription. Return policy_gap:foundation_building_pathway_not_authored until an exact reviewed pathway exists.",
+    "health": "Reported health concern, health-related interruption, or illness_or_injury return reason returns health_review_required."
+  },
+  "review_requirements": ["Qualified coach review of re-entry criteria and any future numerical re-entry workload rules.", "Separate clinical/safety wording review for illness and injury escalation."],
+  "validation_cases": ["currently training with confirmed current capacity", "15-day return for schedule/travel", "40-day return for inconsistency", "60-day return for another non-health reason", "100-day health-related return", "first-time runner", "unknown current context"],
+  "reviewer": { "name": null, "credentials": null, "review_date": null, "comments": null }
+}

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "beginner-5k-adaptation-prescription-policy-v1",
+  "policyId": "runsensei.5k.beginner.adaptation-prescription",
+  "version": "0.2.0-draft",
+  "lifecycle": "draft",
+  "releaseEligibility": "blocked",
+  "appliesTo": ["true_beginner_fixed_12_week_run_walk@0.1.0-draft", "continuous_running_beginner_fixed_12_week@0.1.0-draft"],
+  "transformations": [
+    {"decision":"advance_candidate","transform":"unchanged_plan_preview","requiredEvidence":["system_e_decision"],"status":"draft_no_op","notes":"No new prescription is created."},
+    {"decision":"maintain_candidate","transform":"unchanged_plan_preview","requiredEvidence":["system_e_decision"],"status":"draft_no_op","notes":"No new prescription is created."},
+    {"decision":"repeat_candidate","transform":"insert_exact_current_authored_week_after_current_week_and_shift_later_future_stages","requiredEvidence":["system_e_decision","exact_source_stage","flexible_goal"],"status":"original_candidate_requires_coach_review","notes":"Only Weeks 1-11 may be copied. A new 13-week/39-session draft is possible. No session is resized."},
+    {"decision":"reduce_candidate","transform":"policy_gap","requiredEvidence":["reviewed_lower_workload_variant"],"status":"unsupported","notes":"No lower-workload variant is authored in either pack."},
+    {"decision":"hold_for_review","transform":"hold_for_review","requiredEvidence":["health_or_review_signal"],"status":"non_actionable","notes":"No plan preview is generated."},
+    {"decision":"insufficient_evidence","transform":"insufficient_evidence","requiredEvidence":["missing_facts"],"status":"non_actionable","notes":"No plan preview is generated."},
+    {"decision":"policy_gap","transform":"policy_gap","requiredEvidence":["policy_gap"],"status":"non_actionable","notes":"No plan preview is generated."}
+  ],
+  "safetyConstraints": {"repeatOnlyExactAuthoredStage":true,"repeatMayNotCopyEventWeek":true,"neverDuplicateFinalEvent":true,"fixedDateRepeatMustConflict":true,"preserveHistoricalSessions":true,"requireStructuralValidation":true,"modifiedProgressionRequiresCoachReview":true,"canActivate":false},
+  "validationCases":["repeat_week_creates_39_sessions","fixed_goal_repeat_conflict","one_event_only","unavailable_date_conflict","weekday_limit_conflict","historical_policy_reference_preserved","reduce_policy_gap","draft_activation_blocked"],
+  "reviewer":null,"reviewDate":null,"approvalScope":null,
+  "notes":"Draft-only adaptation prescription policy. Structural validation is not clinical or coaching approval."
+}

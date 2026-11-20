@@ -25,7 +25,7 @@ export async function loadStravaCapability(): Promise<StravaCapability> {
 export async function connectStrava(): Promise<StravaConnectResult> {
   if (stravaMockEnabled) { mockConnected = true; return 'connected'; }
   if (!stravaEnabled) throw new Error('Strava connection is disabled pending product-policy review and server configuration.');
-  const client = await authenticatedClient(); if (!client) throw new Error('Sign in to a RunSensei account before connecting Strava.');
+  const client = await authenticatedClient(); if (!client) throw new Error('Sign in to a Torto account before connecting Strava.');
   const redirectTo = Linking.createURL('integrations/strava-complete');
   const { data, error } = await client.supabase.functions.invoke<{ authorizeUrl: string }>('strava-start', { body: { redirectTo } });
   if (error || !data?.authorizeUrl?.startsWith('https://')) throw new Error('Strava authorization could not be started.');

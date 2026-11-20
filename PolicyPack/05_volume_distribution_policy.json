@@ -1,0 +1,283 @@
+{
+  "policy_id": "runsensei.5k.first_5k_run_walk.volume_distribution",
+  "version": "0.1.0",
+  "goal_family": "5k",
+  "plan_family": "first_5k_true_beginner_run_walk",
+  "title": "Exact session workload reconciliation",
+  "algorithm_ids": [
+    10
+  ],
+  "runner_eligibility": {
+    "eligible_profile": "Adult beginner working toward completing 5 kilometres with walking allowed, not a time goal",
+    "minimum_age_years": 18,
+    "can_walk_30_minutes_comfortably": true,
+    "current_training_requirement": "No running history or limited recent running; not suitable for advanced performance goals",
+    "do_not_auto_enroll_if": [
+      "current concerning symptoms or injury",
+      "user cannot comfortably walk 30 minutes",
+      "user requests a performance/time-based 5K plan",
+      "user is under 18"
+    ],
+    "note": "These are first-release product-scope gates, not medical clearance or diagnostic screening."
+  },
+  "required_inputs": [
+    "plan_week",
+    "approved_structured_workout_policy"
+  ],
+  "training_rules": {
+    "unit": "seconds",
+    "allocation_method": "Use exact A/B/C values from approved Workout Structure Policy; do not apply blanket distance percentages",
+    "weekly_distribution": [
+      {
+        "week": 1,
+        "session_main_seconds": {
+          "A": 1080,
+          "B": 1080,
+          "C": 1260
+        },
+        "run_seconds": {
+          "A": 360,
+          "B": 360,
+          "C": 420
+        },
+        "distribution_method": "exactly_as_structured_workout_template"
+      },
+      {
+        "week": 2,
+        "session_main_seconds": {
+          "A": 1260,
+          "B": 1260,
+          "C": 1470
+        },
+        "run_seconds": {
+          "A": 540,
+          "B": 540,
+          "C": 630
+        },
+        "distribution_method": "exactly_as_structured_workout_template"
+      },
+      {
+        "week": 3,
+        "session_main_seconds": {
+          "A": 1440,
+          "B": 1440,
+          "C": 1680
+        },
+        "run_seconds": {
+          "A": 720,
+          "B": 720,
+          "C": 840
+        },
+        "distribution_method": "exactly_as_structured_workout_template"
+      },
+      {
+        "week": 4,
+        "session_main_seconds": {
+          "A": 1200,
+          "B": 1200,
+          "C": 1440
+        },
+        "run_seconds": {
+          "A": 600,
+          "B": 600,
+          "C": 720
+        },
+        "distribution_method": "exactly_as_structured_workout_template"
+      },
+      {
+        "week": 5,
+        "session_main_seconds": {
+          "A": 1500,
+          "B": 1500,
+          "C": 1800
+        },
+        "run_seconds": {
+          "A": 900,
+          "B": 900,
+          "C": 1080
+        },
+        "distribution_method": "exactly_as_structured_workout_template"
+      },
+      {
+        "week": 6,
+        "session_main_seconds": {
+          "A": 1800,
+          "B": 1800,
+          "C": 2160
+        },
+        "run_seconds": {
+          "A": 1200,
+          "B": 1200,
+          "C": 1440
+        },
+        "distribution_method": "exactly_as_structured_workout_template"
+      },
+      {
+        "week": 7,
+        "session_main_seconds": {
+          "A": 1680,
+          "B": 2100,
+          "C": 2520
+        },
+        "run_seconds": {
+          "A": 1200,
+          "B": 1500,
+          "C": 1800
+        },
+        "distribution_method": "exactly_as_structured_workout_template"
+      },
+      {
+        "week": 8,
+        "session_main_seconds": {
+          "A": 1440,
+          "B": 1440,
+          "C": 1800
+        },
+        "run_seconds": {
+          "A": 960,
+          "B": 960,
+          "C": 1200
+        },
+        "distribution_method": "exactly_as_structured_workout_template"
+      },
+      {
+        "week": 9,
+        "session_main_seconds": {
+          "A": 1920,
+          "B": 1920,
+          "C": 2400
+        },
+        "run_seconds": {
+          "A": 1440,
+          "B": 1440,
+          "C": 1800
+        },
+        "distribution_method": "exactly_as_structured_workout_template"
+      },
+      {
+        "week": 10,
+        "session_main_seconds": {
+          "A": 1980,
+          "B": 1980,
+          "C": 2640
+        },
+        "run_seconds": {
+          "A": 1620,
+          "B": 1620,
+          "C": 2160
+        },
+        "distribution_method": "exactly_as_structured_workout_template"
+      },
+      {
+        "week": 11,
+        "session_main_seconds": {
+          "A": 2160,
+          "B": 2160,
+          "C": 2880
+        },
+        "run_seconds": {
+          "A": 1800,
+          "B": 1800,
+          "C": 2400
+        },
+        "distribution_method": "exactly_as_structured_workout_template"
+      },
+      {
+        "week": 12,
+        "session_main_seconds": {
+          "A": 1200,
+          "B": 960,
+          "C": null
+        },
+        "run_seconds": {
+          "A": 960,
+          "B": 720,
+          "C": null
+        },
+        "distribution_method": "distance_event_not_convertible_without_observed_pace"
+      }
+    ],
+    "rounding_rule": "No rounding before summation; all run/walk segments are integer seconds",
+    "budget_equations": {
+      "session_main_seconds": "sum(repetitions * (run_seconds + walk_seconds))",
+      "weekly_main_seconds": "sum(session_main_seconds[A,B,C]) for weeks 1-11",
+      "weekly_running_seconds": "sum(repetitions * run_seconds) for weeks 1-11",
+      "weekly_total_training_seconds": "weekly_main_seconds + 3 * (300 warmup + 300 cooldown) for weeks 1-11"
+    },
+    "race_week": "Race event is 5,000 metres with unknown duration; never report invented total minutes",
+    "distribution_prohibition": "Do not add intensity miles, extra easy runs or fill time gaps to match an unrelated mileage target"
+  },
+  "fallback_rules": {
+    "insufficient_days": "SCHEDULING_BLOCK; no automatic compression into back-to-back days",
+    "unknown_event_pace": "Do not calculate an event time or weekly distance-equivalent budget"
+  },
+  "safety_constraints": {
+    "session_sums_must_match_weekly_load_policy": true,
+    "extra_unscheduled_training_seconds": 0,
+    "no_rounding_discrepancy_seconds": true
+  },
+  "evidence_sources": [
+    {
+      "source_id": "nhs_couch_to_5k",
+      "type": "external_guidance",
+      "title": "NHS Better Health - Couch to 5K running plan",
+      "url": "https://www.nhs.uk/better-health/get-active/get-running-with-couch-to-5k/couch-to-5k-running-plan/",
+      "supports": "Beginner run/walk programming, 3 run days per week, rest days between runs, five-minute walking warm-up and cool-down, self-paced effort. NHS uses 9 weeks; this pack is an original 12-week proposal, not the NHS schedule."
+    },
+    {
+      "source_id": "nyrr_5k_conservative_pdf",
+      "type": "user_supplied_reference",
+      "title": "NYRR 5K Training Plan Conservative (12 Weeks)",
+      "local_file": "5k Training Plan Conservative.pdf",
+      "pages": [
+        1,
+        2,
+        3
+      ],
+      "supports": "Reference for RPE descriptors, structured sessions and 5K goal race. NOT a true zero-running beginner schedule: includes early speedwork and tempo sessions."
+    }
+  ],
+  "review_status": "draft",
+  "reviewer": {
+    "name": null,
+    "credentials": null,
+    "reviewed_at": null,
+    "approval_record_id": null
+  },
+  "test_cases": [
+    {
+      "id": "P10_W1_RECONCILE",
+      "given": {
+        "week": 1
+      },
+      "expected": {
+        "session_main_seconds": {
+          "A": 1080,
+          "B": 1080,
+          "C": 1260
+        },
+        "weekly_main_seconds": 3420
+      }
+    },
+    {
+      "id": "P10_RACE_UNKNOWN",
+      "given": {
+        "week": 12
+      },
+      "expected": {
+        "event_main_seconds": null
+      }
+    }
+  ],
+  "release_gate": {
+    "can_activate": false,
+    "requires": [
+      "qualified_running_coach_signoff",
+      "clinical_safety_review_for_symptom_handling",
+      "test_suite_pass",
+      "versioned_policy_catalog_approval"
+    ],
+    "on_missing_or_unapproved": "BLOCK_PLAN_GENERATION_NO_SILENT_FALLBACK"
+  },
+  "notes": "DRAFT. Numerical tables are original engineering proposals needing coaching validation. Do not describe as an NYRR or NHS exact plan."
+}

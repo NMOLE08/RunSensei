@@ -1,13 +1,18 @@
 {
   "expo": {
-    "name": "AiSensei",
+    "name": "Torto",
     "slug": "aisensei",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "scheme": "aisensei",
     "android": {
-      "package": "com.aisensei.app"
+      "package": "com.aisensei.app",
+      "icon": "./assets/images/torto-icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/torto-icon.png",
+        "backgroundColor": "#65735B"
+      }
     },
     "ios": {
       "bundleIdentifier": "com.aisensei.app"
@@ -20,9 +25,25 @@
       "expo-status-bar",
       "expo-font",
       "expo-sqlite",
+      "expo-secure-store",
       "expo-notifications",
-      ["llama.rn", { "enableEntitlements": false, "forceCxx20": true, "enableOpenCLAndHexagon": false }],
-      ["expo-location", { "locationWhenInUsePermission": "Allow AiSensei to record your location during a workout." }]
+      [
+        "llama.rn",
+        {
+          "enableEntitlements": false,
+          "forceCxx20": true,
+          "enableOpenCLAndHexagon": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Torto to record your location during a workout.",
+          "locationAlwaysAndWhenInUsePermission": "Allow Torto to keep recording your workout when the app is in the background.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
     ]
   }
 }

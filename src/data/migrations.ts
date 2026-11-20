@@ -57,6 +57,84 @@ export const migrations = [
     `CREATE TABLE IF NOT EXISTS ai_conversation_state (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, kind TEXT NOT NULL, state_json TEXT NOT NULL, model_id TEXT NOT NULL, prompt_version TEXT NOT NULL, updated_at TEXT NOT NULL)`,
     `CREATE INDEX IF NOT EXISTS idx_ai_conversation_owner ON ai_conversation_state(owner_id, updated_at)`,
   ] },
+  { version: 13, statements: [
+    `ALTER TABLE onboarding_drafts ADD COLUMN schema_version INTEGER NOT NULL DEFAULT 1`,
+  ] },
+  { version: 14, statements: [
+    `CREATE TABLE IF NOT EXISTS fitness_assessment_drafts (owner_id TEXT PRIMARY KEY, payload_json TEXT NOT NULL, updated_at TEXT NOT NULL, schema_version INTEGER NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS fitness_assessments (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, assessment_version TEXT NOT NULL, input_fingerprint TEXT NOT NULL, input_json TEXT NOT NULL, result_json TEXT NOT NULL, created_at TEXT NOT NULL)`,
+    `CREATE INDEX IF NOT EXISTS idx_fitness_assessments_owner_created ON fitness_assessments(owner_id, created_at)`,
+  ] },
+  { version: 15, statements: [
+    // One immutable assessment fact per account and exact input fingerprint.
+    // Different answers intentionally create a later historical assessment.
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_fitness_assessments_owner_fingerprint ON fitness_assessments(owner_id, input_fingerprint)`,
+  ] },
+  { version: 16, statements: [
+    `CREATE TABLE IF NOT EXISTS research_foundation_blocks (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, identity_key TEXT NOT NULL, parent_block_id TEXT, lifecycle_state TEXT NOT NULL DEFAULT 'saved', payload_json TEXT NOT NULL, UNIQUE(owner_id, identity_key))`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_research_single_successor ON research_foundation_blocks(owner_id, parent_block_id) WHERE parent_block_id IS NOT NULL`,
+    `CREATE TABLE IF NOT EXISTS research_foundation_outcomes (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, block_id TEXT NOT NULL, assignment_id TEXT NOT NULL, previous_id TEXT, activity_id TEXT, payload_json TEXT NOT NULL)`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_research_outcome_correction ON research_foundation_outcomes(owner_id, previous_id) WHERE previous_id IS NOT NULL`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_research_outcome_first ON research_foundation_outcomes(owner_id, assignment_id) WHERE previous_id IS NULL`,
+    `CREATE TABLE IF NOT EXISTS research_foundation_decisions (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, block_id TEXT NOT NULL, payload_json TEXT NOT NULL)`,
+  ] },
+  { version: 17, statements: [
+    `CREATE TABLE IF NOT EXISTS research_pending_checkins (owner_id TEXT NOT NULL, activity_id TEXT NOT NULL, block_id TEXT NOT NULL, assignment_id TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(owner_id, activity_id))`,
+    `CREATE INDEX IF NOT EXISTS idx_research_pending_owner ON research_pending_checkins(owner_id, created_at)`,
+  ] },
+  { version: 18, statements: [
+    `CREATE TABLE IF NOT EXISTS research_guided_progress (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, block_id TEXT NOT NULL, assignment_id TEXT NOT NULL, tracking_session_id TEXT NOT NULL, snapshot_fingerprint TEXT NOT NULL, revision INTEGER NOT NULL, progress_json TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(owner_id, block_id, assignment_id), UNIQUE(owner_id, tracking_session_id))`,
+    `CREATE INDEX IF NOT EXISTS idx_research_guided_owner ON research_guided_progress(owner_id, updated_at)`,
+  ] },
+  { version: 19, statements: [
+    `CREATE TABLE IF NOT EXISTS guided_cue_preferences (owner_id TEXT PRIMARY KEY, voice_enabled INTEGER NOT NULL DEFAULT 0, muted INTEGER NOT NULL DEFAULT 0, countdown_enabled INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS guided_cue_events (owner_id TEXT NOT NULL, session_id TEXT NOT NULL, event_id TEXT NOT NULL, kind TEXT NOT NULL, phase_id TEXT, status TEXT NOT NULL CHECK(status IN ('claimed','playback_attempted','playback_completed','playback_failed','suppressed_stale','suppressed_muted','suppressed_disabled','playback_superseded')), claimed_at TEXT NOT NULL, attempted_at TEXT, completed_at TEXT, error_code TEXT, PRIMARY KEY(owner_id, session_id, event_id))`,
+    `CREATE INDEX IF NOT EXISTS idx_guided_cue_events_session ON guided_cue_events(owner_id, session_id, claimed_at)`,
+  ] },
+  { version: 20, statements: [
+    `CREATE TABLE IF NOT EXISTS research_weekly_evidence (owner_id TEXT NOT NULL, week_start TEXT NOT NULL, timezone TEXT NOT NULL, coverage TEXT NOT NULL CHECK(coverage IN ('complete','confirmed_no_running','partial','unknown')), confirmation_date TEXT NOT NULL, episode_id TEXT, revision INTEGER NOT NULL, payload_json TEXT NOT NULL, PRIMARY KEY(owner_id, week_start, revision))`,
+    `CREATE INDEX IF NOT EXISTS idx_research_weekly_evidence_current ON research_weekly_evidence(owner_id, week_start, revision)`,
+    `CREATE TABLE IF NOT EXISTS research_training_episodes (owner_id TEXT NOT NULL, id TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('current','historical','unknown')), started_on TEXT, interruption_date TEXT, reason TEXT, revision INTEGER NOT NULL, payload_json TEXT NOT NULL, PRIMARY KEY(owner_id,id,revision))`,
+    `CREATE INDEX IF NOT EXISTS idx_research_episode_owner ON research_training_episodes(owner_id, revision)`,
+  ] },
+  { version: 21, statements: [
+    `CREATE TABLE IF NOT EXISTS tracking_metric_edges (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, session_id TEXT NOT NULL, observation_timestamp_ms INTEGER NOT NULL, processing_timestamp_ms INTEGER NOT NULL, segment INTEGER NOT NULL, distance_increment_meters REAL NOT NULL, cumulative_distance_meters REAL NOT NULL, active_elapsed_ms INTEGER NOT NULL, accuracy_meters REAL NOT NULL, edge_kind TEXT NOT NULL CHECK(edge_kind IN ('anchor','movement','gap')), metric_version INTEGER NOT NULL, UNIQUE(session_id, observation_timestamp_ms))`,
+    `CREATE INDEX IF NOT EXISTS idx_tracking_metric_edges_session ON tracking_metric_edges(owner_id, session_id, observation_timestamp_ms)`,
+    `CREATE TABLE IF NOT EXISTS tracking_km_splits (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, session_id TEXT NOT NULL, kilometre INTEGER NOT NULL, crossing_active_ms INTEGER NOT NULL, duration_ms INTEGER NOT NULL, pace_sec_per_km REAL NOT NULL, gps_coverage TEXT NOT NULL CHECK(gps_coverage IN ('continuous','gaps')), metric_version INTEGER NOT NULL, split_version INTEGER NOT NULL, UNIQUE(session_id, kilometre))`,
+    `CREATE INDEX IF NOT EXISTS idx_tracking_km_splits_session ON tracking_km_splits(owner_id, session_id, kilometre)`,
+    `CREATE TABLE IF NOT EXISTS tracking_gps_state (session_id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, last_received_timestamp_ms INTEGER, last_accepted_timestamp_ms INTEGER, accuracy_meters REAL, quality_state TEXT NOT NULL CHECK(quality_state IN ('acquiring','reliable','degraded','stale','unavailable')), reason_codes_json TEXT NOT NULL DEFAULT '[]', task_error_code TEXT, task_error_count INTEGER NOT NULL DEFAULT 0, accept_until_ms INTEGER, updated_at_ms INTEGER NOT NULL)`,
+    `CREATE INDEX IF NOT EXISTS idx_tracking_gps_state_owner ON tracking_gps_state(owner_id, updated_at_ms)`,
+  ] },
+  { version: 22, statements: [
+    `ALTER TABLE tracking_gps_state ADD COLUMN last_valid_observation_timestamp_ms INTEGER`,
+    `CREATE INDEX IF NOT EXISTS idx_tracking_metric_edges_active_time ON tracking_metric_edges(owner_id, session_id, active_elapsed_ms)`,
+  ] },
+  { version: 23, statements: [
+    `CREATE TABLE IF NOT EXISTS tracking_active_gps_binding (binding_key TEXT PRIMARY KEY CHECK(binding_key = 'active_gps'), owner_id TEXT NOT NULL, session_id TEXT NOT NULL UNIQUE, generation INTEGER NOT NULL CHECK(generation > 0), lifecycle_state TEXT NOT NULL CHECK(lifecycle_state IN ('recording','draining','paused','finishing','interrupted')), cutoff_ms INTEGER, updated_at_ms INTEGER NOT NULL)`,
+    `CREATE INDEX IF NOT EXISTS idx_tracking_active_gps_binding_owner ON tracking_active_gps_binding(owner_id, session_id)`,
+  ] },
+  { version: 24, statements: [
+    `ALTER TABLE tracking_active_gps_binding ADD COLUMN cutoff_token TEXT`,
+    `ALTER TABLE tracking_active_gps_binding ADD COLUMN pipeline_epoch INTEGER NOT NULL DEFAULT 1`,
+    `ALTER TABLE tracking_active_gps_binding ADD COLUMN pipeline_started_at_ms INTEGER`,
+    `ALTER TABLE tracking_active_gps_binding ADD COLUMN trusted_anchor_timestamp_ms INTEGER`,
+    `ALTER TABLE tracking_active_gps_binding ADD COLUMN trusted_anchor_latitude REAL`,
+    `ALTER TABLE tracking_active_gps_binding ADD COLUMN trusted_anchor_longitude REAL`,
+    `ALTER TABLE tracking_active_gps_binding ADD COLUMN trusted_anchor_accuracy_meters REAL`,
+    `ALTER TABLE tracking_active_gps_binding ADD COLUMN quarantine_state TEXT NOT NULL DEFAULT 'ready' CHECK(quarantine_state IN ('pending','ready','blocked'))`,
+  ] },
+  { version: 25, statements: [
+    `ALTER TABLE tracking_active_gps_binding ADD COLUMN resume_state TEXT NOT NULL DEFAULT 'confirmed' CHECK(resume_state IN ('confirmed','native_start_pending','recovery_required'))`,
+    `ALTER TABLE tracking_active_gps_binding ADD COLUMN resume_distance_meters REAL`,
+  ] },
+  { version: 26, statements: [
+    `ALTER TABLE tracking_active_gps_binding ADD COLUMN account_transition_pending INTEGER NOT NULL DEFAULT 0 CHECK(account_transition_pending IN (0,1))`,
+  ] },
+  { version: 27, statements: [
+    `CREATE TABLE IF NOT EXISTS tracking_gps_diagnostic_sessions (owner_id TEXT NOT NULL, session_id TEXT NOT NULL, summary_json TEXT NOT NULL, updated_at_ms INTEGER NOT NULL, PRIMARY KEY(owner_id, session_id))`,
+    `CREATE TABLE IF NOT EXISTS tracking_gps_diagnostic_events (owner_id TEXT NOT NULL, session_id TEXT NOT NULL, sequence INTEGER NOT NULL, event_json TEXT NOT NULL, recorded_at_ms INTEGER NOT NULL, PRIMARY KEY(owner_id, session_id, sequence))`,
+    `CREATE INDEX IF NOT EXISTS idx_tracking_gps_diagnostic_events_session ON tracking_gps_diagnostic_events(owner_id, session_id, sequence)`,
+  ] },
 ];
 
 let migrationQueue: Promise<void> = Promise.resolve();

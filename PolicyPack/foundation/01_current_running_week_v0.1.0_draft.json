@@ -1,0 +1,15 @@
+{
+  "policy_id": "runsensei.foundation.current_running_week",
+  "version": "0.1.0-draft",
+  "review_status": "draft",
+  "production_eligible": false,
+  "reviewer": null,
+  "classification": "original_candidate_requires_qualified_review",
+  "supported_variant": "currently_training_low_volume",
+  "parameters": { "sessions": 3, "minimum_rest_days": 1, "warmup_walk_seconds": 300, "cooldown_walk_seconds": 300 },
+  "workload_rule": "Maintain explicitly confirmed current weekly running seconds. Divide into three sessions, distributing integer remainder seconds in A/B/C order. Each running block must fit explicitly confirmed current continuous capacity. Historical longest sessions never enter this calculation.",
+  "evidence_required": ["current weekly running minutes", "current continuous running capacity", "explicit confirmation of both current facts", "comfortable walking confirmation", "currently training without interruption", "confirmed available time"],
+  "limitations": ["Original candidate arithmetic, not evidence of individual safety", "Added walking load requires coaching review", "No advancement, return-to-running, first-time, taper or event-readiness rule", "Only one week; no promise that a fixed race date is achievable"],
+  "evidence_sources": [],
+  "review_decisions": ["Approve, modify or reject equal allocation", "Review walking duration and total load", "Review entry criteria, frequency and recovery", "Author subsequent-week reassessment"]
+}

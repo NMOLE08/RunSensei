@@ -1,0 +1,171 @@
+{
+  "policy_id": "runsensei.5k.first_5k_run_walk.workout_selection",
+  "version": "0.1.0",
+  "goal_family": "5k",
+  "plan_family": "first_5k_true_beginner_run_walk",
+  "title": "Allowed workout types by week and beginner eligibility",
+  "algorithm_ids": [
+    9
+  ],
+  "runner_eligibility": {
+    "eligible_profile": "Adult beginner working toward completing 5 kilometres with walking allowed, not a time goal",
+    "minimum_age_years": 18,
+    "can_walk_30_minutes_comfortably": true,
+    "current_training_requirement": "No running history or limited recent running; not suitable for advanced performance goals",
+    "do_not_auto_enroll_if": [
+      "current concerning symptoms or injury",
+      "user cannot comfortably walk 30 minutes",
+      "user requests a performance/time-based 5K plan",
+      "user is under 18"
+    ],
+    "note": "These are first-release product-scope gates, not medical clearance or diagnostic screening."
+  },
+  "required_inputs": [
+    "goal_type",
+    "plan_week",
+    "runner_eligibility",
+    "session_role"
+  ],
+  "training_rules": {
+    "base_workout_types": [
+      "easy_run_walk_repeats",
+      "extended_easy_run_walk",
+      "walking_warmup",
+      "walking_cooldown",
+      "rest_day"
+    ],
+    "event_workout_type": "walk_run_5k_event",
+    "week_to_session_roles": {
+      "weeks_1_to_11": {
+        "A": "easy_run_walk_repeats",
+        "B": "easy_run_walk_repeats",
+        "C": "extended_easy_run_walk"
+      },
+      "week_12": {
+        "A": "easy_run_walk_repeats",
+        "B": "easy_run_walk_repeats",
+        "C": "walk_run_5k_event"
+      }
+    },
+    "prohibited_until_separately_reviewed": [
+      "tempo",
+      "threshold",
+      "vo2max_intervals",
+      "hill_sprints",
+      "speedwork",
+      "all_out_time_trial",
+      "strides_as_mandatory_workout"
+    ],
+    "optional_cross_training": "Not part of this initial approved plan; no extra scheduled load by default.",
+    "selection_algorithm": "Exact phase/week/role lookup. Do not substitute a workout from NYRR Conservative/Moderate/Advanced based only on matching distance."
+  },
+  "fallback_rules": {
+    "missing_workout_template": "BLOCK_NOT_SUBSTITUTE_WITH_HIGHER_LEVEL_WORKOUT",
+    "request_for_quality_workout": "Refer to a separately reviewed non-beginner plan; do not auto-upgrade"
+  },
+  "safety_constraints": {
+    "max_quality_sessions_per_week": 0,
+    "allowed_plan_run_sessions_per_week": 3,
+    "no_automatic_nonbeginner_workouts": true
+  },
+  "evidence_sources": [
+    {
+      "source_id": "nhs_couch_to_5k",
+      "type": "external_guidance",
+      "title": "NHS Better Health - Couch to 5K running plan",
+      "url": "https://www.nhs.uk/better-health/get-active/get-running-with-couch-to-5k/couch-to-5k-running-plan/",
+      "supports": "Beginner run/walk programming, 3 run days per week, rest days between runs, five-minute walking warm-up and cool-down, self-paced effort. NHS uses 9 weeks; this pack is an original 12-week proposal, not the NHS schedule."
+    },
+    {
+      "source_id": "nyrr_5k_conservative_pdf",
+      "type": "user_supplied_reference",
+      "title": "NYRR 5K Training Plan Conservative (12 Weeks)",
+      "local_file": "5k Training Plan Conservative.pdf",
+      "pages": [
+        1,
+        2,
+        3
+      ],
+      "supports": "Reference for RPE descriptors, structured sessions and 5K goal race. NOT a true zero-running beginner schedule: includes early speedwork and tempo sessions."
+    },
+    {
+      "source_id": "nyrr_5k_moderate_pdf",
+      "type": "user_supplied_comparator",
+      "title": "NYRR 5K Training Plan Moderate (12 Weeks)",
+      "local_file": "5k Training Plan Moderate.pdf",
+      "pages": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "supports": "Comparison only. Contains high-mileage quality sessions; not copied into true-beginner schedule."
+    },
+    {
+      "source_id": "nyrr_5k_advanced_pdf",
+      "type": "user_supplied_comparator",
+      "title": "NYRR 5K Training Plan Advanced (12 Weeks)",
+      "local_file": "5k Training Plan Advanced.pdf",
+      "pages": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "supports": "Comparison only. Requires established training background; not copied into true-beginner schedule."
+    }
+  ],
+  "review_status": "draft",
+  "reviewer": {
+    "name": null,
+    "credentials": null,
+    "reviewed_at": null,
+    "approval_record_id": null
+  },
+  "test_cases": [
+    {
+      "id": "P9_BEGINNER_W1",
+      "given": {
+        "week": 1
+      },
+      "expected": {
+        "roles": [
+          "easy_run_walk_repeats",
+          "easy_run_walk_repeats",
+          "extended_easy_run_walk"
+        ]
+      }
+    },
+    {
+      "id": "P9_NO_SPEEDWORK",
+      "given": {
+        "requested_type": "tempo",
+        "week": 6
+      },
+      "expected": {
+        "decision": "REJECT"
+      }
+    },
+    {
+      "id": "P9_EVENT_WEEK",
+      "given": {
+        "week": 12,
+        "role": "C"
+      },
+      "expected": {
+        "type": "walk_run_5k_event"
+      }
+    }
+  ],
+  "release_gate": {
+    "can_activate": false,
+    "requires": [
+      "qualified_running_coach_signoff",
+      "clinical_safety_review_for_symptom_handling",
+      "test_suite_pass",
+      "versioned_policy_catalog_approval"
+    ],
+    "on_missing_or_unapproved": "BLOCK_PLAN_GENERATION_NO_SILENT_FALLBACK"
+  },
+  "notes": "DRAFT. Numerical tables are original engineering proposals needing coaching validation. Do not describe as an NYRR or NHS exact plan."
+}

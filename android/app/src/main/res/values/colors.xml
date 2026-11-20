@@ -1,4 +1,5 @@
 <resources>
-  <color name="splashscreen_background">#FFFFFF</color>
+  <color name="splashscreen_background">#F2EBDD</color>
+  <color name="torto_icon_background">#65735B</color>
   <color name="colorPrimary">#023c69</color>
 </resources>

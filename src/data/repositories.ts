@@ -1,8 +1,53 @@
 import type { ActivityLog, AdjustmentProposal, AuditEvent, Availability, LogicalSession, Plan, PlanRevision, PlanSnapshot, RaceGoal, ReminderRecord, RunnerProfile, SessionAssignment, SessionResolution, UnitSystem } from '@/domain/training/entities';
 import type { SqlDatabase } from './database';
 
+// Serializes publication callers sharing a connection. SQLite's primary-key claim
+// inside the exclusive transaction also protects separate connections/processes.
+const publicationQueues = new WeakMap<SqlDatabase, Promise<unknown>>();
+
 export class TrainingRepository {
   public constructor(private readonly database: SqlDatabase, private readonly ownerId: string | null = null) {}
+  isOwnedBy(ownerId: string): boolean { return !!ownerId && this.ownerId === ownerId; }
+
+  async publishInitialPlanOnce(input: { profile: RunnerProfile; goal: RaceGoal; availability: Availability; snapshot: PlanSnapshot; logicalSessions: LogicalSession[]; event: AuditEvent; assertPublicationCurrent?: () => Promise<void> }): Promise<{ applied: boolean; snapshot: PlanSnapshot }> {
+    if (!this.ownerId || input.snapshot.plan.mode !== 'real' || input.snapshot.revision.parentRevisionId !== null) throw new Error('initial_publication_identity_invalid');
+    const owner = this.ownerId;
+    const operation = async (database: SqlDatabase) => {
+      await input.assertPublicationCurrent?.();
+      const repository = new TrainingRepository(database, owner);
+      const plan = input.snapshot.plan;
+      // A plain insert with conflict-ignore is the durable claim; never replace a plan.
+      const claimed = await database.run('INSERT INTO plans (id,owner_id,goal_id,template_id,mode,active_revision_id,recommendation_state,validation_fingerprint,created_at) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING', [plan.id,owner,plan.goalId,plan.templateId,plan.mode,null,plan.recommendationState,plan.validationFingerprint,plan.createdAt]);
+      if (claimed.changes === 0) {
+        const head = await database.getFirst<{ activeRevisionId: string | null }>('SELECT active_revision_id AS activeRevisionId FROM plans WHERE id = ? AND owner_id = ?', [plan.id, owner]);
+        if (!head || head.activeRevisionId !== input.snapshot.revision.id) throw new Error('publication_revision_conflict');
+        const existing = await repository.getPlanSnapshot(plan.id);
+        if (!existing || existing.plan.validationFingerprint !== plan.validationFingerprint || existing.revision.id !== input.snapshot.revision.id || existing.revision.explanationJson !== input.snapshot.revision.explanationJson || JSON.stringify(existing.assignments) !== JSON.stringify(input.snapshot.assignments)) throw new Error('publication_revision_conflict');
+        await input.assertPublicationCurrent?.();
+        return { applied: false, snapshot: existing };
+      }
+      // These are immutable publication-specific copies, never edits of onboarding records.
+      const p = input.profile; const g = input.goal; const a = input.availability;
+      await database.run('INSERT INTO runner_profiles (id,owner_id,units,training_timezone,baseline_json,recent_weekly_volume_value,recent_weekly_volume_unit,baseline_lookback_days,recent_longest_session_seconds,recent_longest_session_date,comfortable_duration_seconds,interruption_status,version,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', [p.id,owner,p.units,p.trainingTimezone,p.baselineJson,p.recentWeeklyVolumeValue??null,p.recentWeeklyVolumeUnit??null,p.baselineLookbackDays??null,p.recentLongestSessionSeconds??null,p.recentLongestSessionDate??null,p.comfortableDurationSeconds??null,p.interruptionStatus??null,p.version,p.createdAt,p.updatedAt]);
+      await database.run('INSERT INTO race_goals (id,profile_id,mode,distance_meters,race_date,start_date,version,created_at) VALUES (?,?,?,?,?,?,?,?)', [g.id,g.profileId,g.mode,g.distanceMeters,g.raceDate,g.startDate,g.version,g.createdAt]);
+      await database.run('INSERT INTO availability (id,profile_id,weekday_limits_json,preferred_long_run_day,exceptions_json,version,created_at) VALUES (?,?,?,?,?,?,?)', [a.id,a.profileId,a.weekdayLimitsJson,a.preferredLongRunDay,a.exceptionsJson,a.version,a.createdAt]);
+      for (const logical of input.logicalSessions) await repository.saveLogicalSession(logical);
+      await repository.insertRevision(input.snapshot.revision);
+      for (const assignment of input.snapshot.assignments) await repository.insertAssignment(assignment);
+      await database.run('UPDATE plans SET active_revision_id = ? WHERE id = ? AND owner_id = ?', [input.snapshot.revision.id, plan.id, owner]);
+      await repository.saveAuditEvent(input.event);
+      const saved = await repository.getPlanSnapshot(plan.id);
+      if (!saved) throw new Error('publication_reload_failed');
+      await input.assertPublicationCurrent?.();
+      return { applied: true, snapshot: saved };
+    };
+    const previous = publicationQueues.get(this.database) ?? Promise.resolve();
+    const pending = previous.catch(() => undefined).then(() => this.database.exclusiveTransaction
+      ? this.database.exclusiveTransaction(operation)
+      : this.database.transaction(() => operation(this.database)));
+    publicationQueues.set(this.database, pending);
+    try { return await pending; } finally { if (publicationQueues.get(this.database) === pending) publicationQueues.delete(this.database); }
+  }
 
   async saveProfile(profile: RunnerProfile): Promise<void> { await this.database.run(`INSERT OR REPLACE INTO runner_profiles (id,owner_id,units,training_timezone,baseline_json,recent_weekly_volume_value,recent_weekly_volume_unit,baseline_lookback_days,recent_longest_session_seconds,recent_longest_session_date,comfortable_duration_seconds,interruption_status,version,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, [profile.id, this.ownerId, profile.units, profile.trainingTimezone, profile.baselineJson, profile.recentWeeklyVolumeValue ?? null, profile.recentWeeklyVolumeUnit ?? null, profile.baselineLookbackDays ?? null, profile.recentLongestSessionSeconds ?? null, profile.recentLongestSessionDate ?? null, profile.comfortableDurationSeconds ?? null, profile.interruptionStatus ?? null, profile.version, profile.createdAt, profile.updatedAt]); }
   async saveGoal(goal: RaceGoal): Promise<void> { await this.database.run(`INSERT OR REPLACE INTO race_goals (id,profile_id,mode,distance_meters,race_date,start_date,version,created_at) VALUES (?,?,?,?,?,?,?,?)`, [goal.id, goal.profileId, goal.mode, goal.distanceMeters, goal.raceDate, goal.startDate, goal.version, goal.createdAt]); }
@@ -47,7 +92,7 @@ export class TrainingRepository {
   async getLocalAccount(id: string): Promise<{ id: string; email: string; displayName: string | null; phone: string | null; dateOfBirth: string | null } | null> { return this.database.getFirst('SELECT id, email, display_name AS displayName, phone, date_of_birth AS dateOfBirth FROM local_accounts WHERE id = ?', [id]); }
   async getAppSetting(key: string): Promise<string | null> { return (await this.database.getFirst<{ value: string }>('SELECT value FROM app_settings WHERE key = ?', [key]))?.value ?? null; }
   async setAppSetting(key: string, value: string): Promise<void> { await this.database.run('INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,?)', [key, value]); }
-  async claimLegacyOwnership(ownerId: string): Promise<void> { await this.database.transaction(async () => { await this.database.run('UPDATE runner_profiles SET owner_id = ? WHERE owner_id IS NULL', [ownerId]); await this.database.run('UPDATE plans SET owner_id = ? WHERE owner_id IS NULL', [ownerId]); await this.database.run('UPDATE activity_logs SET owner_id = ? WHERE owner_id IS NULL', [ownerId]); await this.database.run('UPDATE reminder_records SET owner_id = ? WHERE owner_id IS NULL', [ownerId]); await this.database.run("UPDATE tracking_sessions SET owner_id = ? WHERE owner_id = 'local-device'", [ownerId]); }); }
+  async removeAppSetting(key: string): Promise<void> { await this.database.run('DELETE FROM app_settings WHERE key = ?', [key]); }
 
   async getPlanSnapshot(planId: string): Promise<PlanSnapshot | null> {
     const plan = this.ownerId ? await this.database.getFirst<Plan>('SELECT id, goal_id AS goalId, template_id AS templateId, mode, active_revision_id AS activeRevisionId, recommendation_state AS recommendationState, validation_fingerprint AS validationFingerprint, created_at AS createdAt FROM plans WHERE id = ? AND owner_id = ?', [planId, this.ownerId]) : await this.database.getFirst<Plan>('SELECT id, goal_id AS goalId, template_id AS templateId, mode, active_revision_id AS activeRevisionId, recommendation_state AS recommendationState, validation_fingerprint AS validationFingerprint, created_at AS createdAt FROM plans WHERE id = ?', [planId]);
@@ -81,8 +126,53 @@ export class TrainingRepository {
 
   async listReminders(): Promise<ReminderRecord[]> { return this.ownerId ? this.database.getAll<ReminderRecord>('SELECT id, session_id AS sessionId, revision_id AS revisionId, local_time AS localTime, timezone, native_notification_id AS nativeNotificationId, desired_state AS desiredState, current_state AS currentState FROM reminder_records WHERE owner_id = ?', [this.ownerId]) : this.database.getAll<ReminderRecord>('SELECT id, session_id AS sessionId, revision_id AS revisionId, local_time AS localTime, timezone, native_notification_id AS nativeNotificationId, desired_state AS desiredState, current_state AS currentState FROM reminder_records'); }
   async replaceReminders(records: ReminderRecord[]): Promise<void> { await this.database.transaction(async () => { if (this.ownerId) await this.database.run('DELETE FROM reminder_records WHERE owner_id = ?', [this.ownerId]); else await this.database.run('DELETE FROM reminder_records'); for (const record of records) await this.saveReminder(record); }); }
-  async exportJson(): Promise<string> { const tables = ['runner_profiles', 'race_goals', 'availability', 'plans', 'plan_revisions', 'logical_sessions', 'session_assignments', 'activity_logs', 'session_resolutions', 'adjustment_proposals', 'plan_review_state', 'audit_events', 'reminder_records', 'tracking_sessions', 'tracking_points', 'ai_model_installations', 'ai_conversation_state']; const exported = await Promise.all(tables.map(async (table) => [table, await this.database.getAll<Record<string, unknown>>(`SELECT * FROM ${table}`)] as const)); return JSON.stringify({ schemaVersion: 12, exportedAt: new Date().toISOString(), data: Object.fromEntries(exported) }, null, 2); }
-  async deleteAllAppData(): Promise<void> { const tables = ['ai_conversation_state', 'ai_model_installations', 'tracking_points', 'tracking_sessions', 'reminder_records', 'plan_review_state', 'adjustment_proposals', 'session_resolutions', 'activity_logs', 'session_assignments', 'logical_sessions', 'plan_revisions', 'plans', 'availability', 'race_goals', 'runner_profiles', 'onboarding_drafts', 'audit_events']; await this.database.transaction(async () => { for (const table of tables) await this.database.run(`DELETE FROM ${table}`); }); }
+  async exportJson(): Promise<string> {
+    if (!this.ownerId) throw new Error('An account owner is required to export local data.');
+    const owner = this.ownerId;
+    const plans = await this.database.getAll<Record<string, unknown>>('SELECT * FROM plans WHERE owner_id = ?', [owner]);
+    const planIds = plans.map((plan) => String(plan.id));
+    const ids = planIds.length ? `(${planIds.map(() => '?').join(',')})` : '(NULL)';
+    const revisions = await this.database.getAll<Record<string, unknown>>(`SELECT * FROM plan_revisions WHERE plan_id IN ${ids}`, planIds);
+    const revisionIds = revisions.map((revision) => String(revision.id)); const revisionPlaceholders = revisionIds.length ? `(${revisionIds.map(() => '?').join(',')})` : '(NULL)';
+    const logical = await this.database.getAll<Record<string, unknown>>(`SELECT * FROM logical_sessions WHERE plan_id IN ${ids}`, planIds);
+    const logicalIds = logical.map((session) => String(session.id)); const logicalPlaceholders = logicalIds.length ? `(${logicalIds.map(() => '?').join(',')})` : '(NULL)';
+    const tracking = await this.database.getAll<Record<string, unknown>>('SELECT * FROM tracking_sessions WHERE owner_id = ?', [owner]);
+    const trackingIds = tracking.map((session) => String(session.id)); const trackingPlaceholders = trackingIds.length ? `(${trackingIds.map(() => '?').join(',')})` : '(NULL)';
+    const profiles = await this.database.getAll<Record<string, unknown>>('SELECT * FROM runner_profiles WHERE owner_id = ?', [owner]);
+    const profileIds = profiles.map((profile) => String(profile.id)); const profilePlaceholders = profileIds.length ? `(${profileIds.map(() => '?').join(',')})` : '(NULL)';
+    const data = {
+      research_foundation_blocks: await this.database.getAll<Record<string, unknown>>('SELECT * FROM research_foundation_blocks WHERE owner_id = ?', [owner]),
+      research_foundation_outcomes: await this.database.getAll<Record<string, unknown>>('SELECT * FROM research_foundation_outcomes WHERE owner_id = ?', [owner]),
+      research_foundation_decisions: await this.database.getAll<Record<string, unknown>>('SELECT * FROM research_foundation_decisions WHERE owner_id = ?', [owner]),
+      research_pending_checkins: await this.database.getAll<Record<string, unknown>>('SELECT * FROM research_pending_checkins WHERE owner_id = ?', [owner]),
+      runner_profiles: profiles, race_goals: await this.database.getAll<Record<string, unknown>>(`SELECT * FROM race_goals WHERE profile_id IN ${profilePlaceholders}`, profileIds), availability: await this.database.getAll<Record<string, unknown>>(`SELECT * FROM availability WHERE profile_id IN ${profilePlaceholders}`, profileIds), plans, plan_revisions: revisions,
+      logical_sessions: logical, session_assignments: await this.database.getAll<Record<string, unknown>>(`SELECT * FROM session_assignments WHERE revision_id IN ${revisionPlaceholders}`, revisionIds), activity_logs: await this.database.getAll<Record<string, unknown>>('SELECT * FROM activity_logs WHERE owner_id = ?', [owner]), session_resolutions: await this.database.getAll<Record<string, unknown>>(`SELECT * FROM session_resolutions WHERE session_id IN ${logicalPlaceholders}`, logicalIds), reminder_records: await this.database.getAll<Record<string, unknown>>('SELECT * FROM reminder_records WHERE owner_id = ?', [owner]), tracking_sessions: tracking, tracking_points: await this.database.getAll<Record<string, unknown>>(`SELECT * FROM tracking_points WHERE session_id IN ${trackingPlaceholders}`, trackingIds), tracking_metric_edges: await this.database.getAll<Record<string, unknown>>(`SELECT * FROM tracking_metric_edges WHERE session_id IN ${trackingPlaceholders}`, trackingIds), tracking_km_splits: await this.database.getAll<Record<string, unknown>>(`SELECT * FROM tracking_km_splits WHERE session_id IN ${trackingPlaceholders}`, trackingIds), tracking_gps_state: await this.database.getAll<Record<string, unknown>>('SELECT * FROM tracking_gps_state WHERE owner_id = ?', [owner]), tracking_active_gps_binding: await this.database.getAll<Record<string, unknown>>('SELECT * FROM tracking_active_gps_binding WHERE owner_id = ?', [owner]), tracking_gps_diagnostic_sessions: await this.database.getAll<Record<string, unknown>>('SELECT * FROM tracking_gps_diagnostic_sessions WHERE owner_id = ?', [owner]), tracking_gps_diagnostic_events: await this.database.getAll<Record<string, unknown>>('SELECT * FROM tracking_gps_diagnostic_events WHERE owner_id = ? ORDER BY session_id, sequence', [owner]), fitness_assessments: await this.database.getAll<Record<string, unknown>>('SELECT * FROM fitness_assessments WHERE owner_id = ?', [owner]),
+    };
+    return JSON.stringify({ schemaVersion: 13, ownerId: owner, exportedAt: new Date().toISOString(), data }, null, 2);
+  }
+  async deleteAllAppData(): Promise<void> {
+    if (!this.ownerId) throw new Error('An account owner is required to delete local data.');
+    const owner = this.ownerId;
+    await this.database.transaction(async () => {
+      const tracking = await this.database.getAll<{ id: string }>('SELECT id FROM tracking_sessions WHERE owner_id = ?', [owner]);
+      for (const table of ['research_pending_checkins', 'research_foundation_decisions', 'research_foundation_outcomes', 'research_foundation_blocks']) await this.database.run(`DELETE FROM ${table} WHERE owner_id = ?`, [owner]);
+      for (const item of tracking) { await this.database.run('DELETE FROM tracking_gps_diagnostic_events WHERE session_id = ? AND owner_id = ?', [item.id, owner]); await this.database.run('DELETE FROM tracking_gps_diagnostic_sessions WHERE session_id = ? AND owner_id = ?', [item.id, owner]); await this.database.run('DELETE FROM tracking_km_splits WHERE session_id = ? AND owner_id = ?', [item.id, owner]); await this.database.run('DELETE FROM tracking_metric_edges WHERE session_id = ? AND owner_id = ?', [item.id, owner]); await this.database.run('DELETE FROM tracking_gps_state WHERE session_id = ? AND owner_id = ?', [item.id, owner]); await this.database.run('DELETE FROM tracking_points WHERE session_id = ?', [item.id]); }
+      await this.database.run('DELETE FROM tracking_active_gps_binding WHERE owner_id = ?', [owner]);
+      await this.database.run('DELETE FROM tracking_sessions WHERE owner_id = ?', [owner]);
+      const plans = await this.database.getAll<{ id: string }>('SELECT id FROM plans WHERE owner_id = ?', [owner]);
+      for (const plan of plans) {
+        const logical = await this.database.getAll<{ id: string }>('SELECT id FROM logical_sessions WHERE plan_id = ?', [plan.id]);
+        const revisions = await this.database.getAll<{ id: string }>('SELECT id FROM plan_revisions WHERE plan_id = ?', [plan.id]);
+        for (const revision of revisions) { await this.database.run('DELETE FROM session_assignments WHERE revision_id = ?', [revision.id]); await this.database.run('DELETE FROM session_resolutions WHERE revision_id = ?', [revision.id]); }
+        for (const session of logical) await this.database.run('DELETE FROM session_resolutions WHERE session_id = ?', [session.id]);
+        await this.database.run('DELETE FROM logical_sessions WHERE plan_id = ?', [plan.id]); await this.database.run('DELETE FROM plan_revisions WHERE plan_id = ?', [plan.id]); await this.database.run('DELETE FROM adjustment_proposals WHERE plan_id = ?', [plan.id]); await this.database.run('DELETE FROM plan_review_state WHERE plan_id = ?', [plan.id]);
+      }
+      await this.database.run('DELETE FROM plans WHERE owner_id = ?', [owner]); await this.database.run('DELETE FROM activity_logs WHERE owner_id = ?', [owner]); await this.database.run('DELETE FROM reminder_records WHERE owner_id = ?', [owner]); await this.database.run('DELETE FROM ai_conversation_state WHERE owner_id = ?', [owner]); await this.database.run('DELETE FROM fitness_assessment_drafts WHERE owner_id = ?', [owner]); await this.database.run('DELETE FROM fitness_assessments WHERE owner_id = ?', [owner]);
+      const profiles = await this.database.getAll<{ id: string }>('SELECT id FROM runner_profiles WHERE owner_id = ?', [owner]);
+      for (const profile of profiles) { await this.database.run('DELETE FROM availability WHERE profile_id = ?', [profile.id]); await this.database.run('DELETE FROM race_goals WHERE profile_id = ?', [profile.id]); }
+      await this.database.run('DELETE FROM runner_profiles WHERE owner_id = ?', [owner]);
+    });
+  }
 
   async recordOutcome(input: { planId: string; eventId: string; log: ActivityLog; resolution: SessionResolution; audit: AuditEvent; recommendationState: 'needs_review' | 'health_hold' }): Promise<boolean> {
     const existing = await this.database.getFirst<{ id: string }>('SELECT id FROM session_resolutions WHERE event_id = ?', [input.eventId]);

@@ -4,6 +4,9 @@ import * as WebBrowser from 'expo-web-browser';
 import { supabaseStorage } from '@/data/supabaseStorage';
 import { parseAuthRedirect } from './authRedirect';
 
+// Older Jest mocks do not implement this native browser cleanup helper.
+WebBrowser.maybeCompleteAuthSession?.();
+
 const url = 'https://simzbjtoyxvdswasccid.supabase.co';
 const publishableKey = 'sb_publishable_XLAsF4_zpU413VzmfpnU9g_BtD7k9SL';
 export const supabase = createClient(url, publishableKey, { auth: { storage: supabaseStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });

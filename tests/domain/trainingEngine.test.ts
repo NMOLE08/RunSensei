@@ -1,5 +1,5 @@
 import { demoHalfRules, demoHalfTemplate } from '@/domain/training/demoContent';
-import { generatePlan, selectTemplate, validatePlanConstraints, validateTemplate } from '@/domain/training/engine';
+import { generatePlan, generateWeeklyDemoPlan, selectTemplate, validatePlanConstraints, validateTemplate } from '@/domain/training/engine';
 import type { PlanningRequest } from '@/domain/training/content';
 
 const request = (): PlanningRequest => ({ profile: { entryRequirementsMet: true, recentWeeklyMinutes: 120, recentLongestSessionMinutes: 45, recentLongestSessionDate: '2026-10-01', comfortableDurationMinutes: 30, interruptionStatus: 'none' }, goal: { mode: 'flexible', startDate: '2026-11-02', raceDate: null, distanceMeters: 21097 }, availability: { weekdayMinuteLimits: { 1: 45, 3: 45, 6: 60 }, preferredLongRunDay: 6, unavailableDates: [] }, templateMode: 'demo' });
@@ -7,6 +7,21 @@ const request = (): PlanningRequest => ({ profile: { entryRequirementsMet: true,
 describe('deterministic demo planning engine', () => {
   it('selects deterministic supported content and equivalent inputs yield equivalent prescriptions', () => { const selected = selectTemplate(request(), [demoHalfTemplate], [demoHalfRules]); expect(selected?.template.id).toBe(demoHalfTemplate.id); const first = generatePlan(request(), demoHalfTemplate, demoHalfRules); const second = generatePlan(request(), demoHalfTemplate, demoHalfRules); expect(first).toEqual(second); expect(first).toMatchObject({ kind: 'preview' }); });
   it('keeps every generated session inside the selected day minute budget and supported pattern', () => { const result = generatePlan(request(), demoHalfTemplate, demoHalfRules); if (result.kind !== 'preview') throw new Error('Expected preview'); expect(validatePlanConstraints(result.preview.sessions, request().availability, demoHalfRules)).toEqual([]); expect(result.preview.sessions.every((session) => session.durationSeconds <= request().availability.weekdayMinuteLimits[new Date(`${session.plannedDate}T00:00:00Z`).getUTCDay() === 0 ? 6 : new Date(`${session.plannedDate}T00:00:00Z`).getUTCDay() - 1] * 60)).toBe(true); });
+  it('generates only one seven-day demo window and no future-week sessions', () => {
+    const result = generateWeeklyDemoPlan(request(), demoHalfTemplate, demoHalfRules);
+    expect(result.kind).toBe('preview');
+    if (result.kind !== 'preview') return;
+    expect(result.preview.sessions).toHaveLength(3);
+    expect(result.preview.sessions.every((session) => session.week === 1 && session.plannedDate >= '2026-11-02' && session.plannedDate <= '2026-11-08')).toBe(true);
+    expect(result.preview.selectionExplanation).toMatch(/No later workouts were generated/i);
+    expect(generateWeeklyDemoPlan(request(), demoHalfTemplate, demoHalfRules)).toEqual(result);
+  });
+  it('validates fixed dates without compressing the long-term goal into the weekly window', () => {
+    const fixed = request(); fixed.goal = { ...fixed.goal, mode: 'fixed_date', raceDate: '2027-03-01' };
+    expect(generateWeeklyDemoPlan(fixed, demoHalfTemplate, demoHalfRules).kind).toBe('preview');
+    fixed.goal.raceDate = fixed.goal.startDate;
+    expect(generateWeeklyDemoPlan(fixed, demoHalfTemplate, demoHalfRules)).toEqual({ kind: 'infeasible', reasonCodes: ['fixed_date_incompatible'] });
+  });
   it('returns structured infeasibility for fixed date, availability, and production demo content', () => { const incompatible = request(); incompatible.goal = { ...incompatible.goal, mode: 'fixed_date', raceDate: '2026-12-01' }; expect(generatePlan(incompatible, demoHalfTemplate, demoHalfRules)).toEqual({ kind: 'infeasible', reasonCodes: ['fixed_date_incompatible'] }); const shortDay = request(); shortDay.availability.weekdayMinuteLimits[6] = 10; expect(generatePlan(shortDay, demoHalfTemplate, demoHalfRules)).toMatchObject({ kind: 'infeasible', reasonCodes: ['day_time_limit_exceeded'] }); const production = request(); production.templateMode = 'real'; expect(generatePlan(production, demoHalfTemplate, demoHalfRules)).toEqual({ kind: 'infeasible', reasonCodes: ['demo_content_only'] }); });
   it('rejects malformed phase and taper content before scheduling', () => { const malformed = { ...demoHalfTemplate, phases: [...demoHalfTemplate.phases.slice(0, -1)] }; expect(validateTemplate(malformed, demoHalfRules)).toEqual(expect.arrayContaining(['phase_order_invalid', 'protected_taper_invalid', 'unsupported_duration'])); });
   it('rejects invalid targets, inconsistent steps, and recovery conflicts in content before generation', () => {

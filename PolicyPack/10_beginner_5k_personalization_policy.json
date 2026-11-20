@@ -1,0 +1,152 @@
+{
+  "schemaVersion": "beginner-5k-personalization-policy-v1",
+  "policyId": "runsensei.5k.beginner.personalization",
+  "version": "0.2.0-draft",
+  "lifecycle": "draft",
+  "goal": "first_5k_completion",
+  "eligibility": {
+    "requiredInputs": [
+      "adult_age_confirmed",
+      "can_walk_30_minutes_comfortably",
+      "first_5k_experience",
+      "health_concern",
+      "goal",
+      "goal_focus",
+      "plan_start_date",
+      "available_training_days"
+    ],
+    "healthConcernBlocksSelection": true
+  },
+  "pathways": [
+    {
+      "id": "true_beginner_fixed_12_week_run_walk",
+      "version": "0.1.0-draft",
+      "label": "Fixed true-beginner run/walk draft pathway",
+      "requiredInputs": [
+        "adult_age_confirmed",
+        "can_walk_30_minutes_comfortably",
+        "first_5k_experience",
+        "health_concern",
+        "goal",
+        "goal_focus",
+        "plan_start_date",
+        "available_training_days"
+      ],
+      "supportedExperience": ["none_or_limited"],
+      "supportedGoal": "first_5k_completion",
+      "supportedGoalFocus": "completion",
+      "workoutPolicyPack": {
+        "policyId": "runsensei.5k.first_5k_true_beginner_run_walk.pack",
+        "version": "0.1.0-draft",
+        "policyReferences": [
+          "runsensei.5k.first_5k_run_walk.periodization@0.1.0",
+          "runsensei.5k.first_5k_run_walk.weekly_load@0.1.0",
+          "runsensei.5k.first_5k_run_walk.extended_session@0.1.0",
+          "runsensei.5k.first_5k_run_walk.workout_selection@0.1.0",
+          "runsensei.5k.first_5k_run_walk.volume_distribution@0.1.0",
+          "runsensei.5k.first_5k_run_walk.training_pace@0.1.0",
+          "runsensei.5k.first_5k_run_walk.intensity@0.1.0",
+          "runsensei.5k.first_5k_run_walk.workout_structure@0.1.0",
+          "runsensei.5k.first_5k_run_walk.scheduling_safety@0.1.0"
+        ]
+      },
+      "selectionRuleIds": ["true_beginner_eligibility_v1"],
+      "startingWorkloadRuleId": "fixed_pack_start_v1",
+      "progressionRuleIds": ["progression_requires_review_v1"],
+      "recoveryRuleIds": ["existing_pack_recovery_v1"],
+      "schedulingRuleIds": ["existing_pack_nonconsecutive_days_v1"]
+    }
+  ],
+  "pathwaySelectionRules": [
+    {
+      "id": "true_beginner_eligibility_v1",
+      "status": "defined",
+      "description": "Select only the existing fixed true-beginner draft pathway when its stated eligibility and scheduling requirements are complete."
+    },
+    {
+      "id": "continuous_runner_pathway_v1",
+      "status": "requires_review",
+      "description": "A continuous-running pathway requires reviewed entry, workload, workout-content and progression rules before it can be represented as a selectable pathway."
+    },
+    {
+      "id": "returning_runner_pathway_v1",
+      "status": "requires_review",
+      "description": "A returning-runner pathway requires reviewed interruption, re-entry, health escalation, workload and progression rules before it can be represented as a selectable pathway."
+    }
+  ],
+  "startingWorkloadRules": [
+    {
+      "id": "fixed_pack_start_v1",
+      "status": "defined",
+      "description": "Use the existing fixed twelve-week draft workout pack from Week 1. Do not select a later week or scale session duration."
+    },
+    {
+      "id": "continuous_runner_start_v1",
+      "status": "requires_review",
+      "description": "No reviewed numerical starting-workload rule exists."
+    },
+    {
+      "id": "returning_runner_start_v1",
+      "status": "requires_review",
+      "description": "No reviewed numerical re-entry starting-workload rule exists."
+    }
+  ],
+  "progressionRules": [
+    {
+      "id": "progression_requires_review_v1",
+      "status": "requires_review",
+      "description": "No runner-specific stage-advancement, repetition or regression thresholds are approved."
+    }
+  ],
+  "recoveryAndInterruptionRules": [
+    {
+      "id": "existing_pack_recovery_v1",
+      "status": "defined",
+      "description": "Use the linked pack’s non-consecutive-day and protected recovery-week requirements. No catch-up workload is authorized."
+    },
+    {
+      "id": "return_after_interruption_v1",
+      "status": "requires_review",
+      "description": "No reviewed interruption duration, re-entry, or workload-regression rule exists."
+    }
+  ],
+  "schedulingRules": [
+    {
+      "id": "existing_pack_nonconsecutive_days_v1",
+      "status": "defined",
+      "description": "Use only a schedule accepted by the linked fixed workout pack."
+    }
+  ],
+  "evidence": [
+    {
+      "id": "nhs-couch-to-5k",
+      "title": "NHS Better Health: Couch to 5K running plan",
+      "url": "https://www.nhs.uk/better-health/get-active/get-running-with-couch-to-5k/couch-to-5k-running-plan/",
+      "accessedOn": "2026-11-03",
+      "use": "background_structure",
+      "reuseStatus": "research_reference_only",
+      "notes": "Supports general beginner run/walk structure, three weekly sessions, rest days and walking warm-up/cool-down. It does not validate this original twelve-week table or personalization thresholds."
+    },
+    {
+      "id": "running-load-systematic-review",
+      "title": "The Association Between Running Injuries and Training Parameters: A Systematic Review",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/34478518/",
+      "accessedOn": "2026-11-03",
+      "use": "risk_context",
+      "reuseStatus": "research_reference_only",
+      "notes": "Reports conflicting evidence for specific training-parameter and injury relationships; it does not supply a universal progression formula."
+    }
+  ],
+  "reviewer": null,
+  "reviewDate": null,
+  "approvalScope": null,
+  "releaseEligibility": "blocked",
+  "validationCaseIds": [
+    "true_beginner_fixed_pack",
+    "continuous_runner_policy_gap",
+    "returning_runner_policy_gap",
+    "health_hold",
+    "invalid_schedule",
+    "draft_activation_blocked"
+  ]
+}

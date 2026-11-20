@@ -74,6 +74,31 @@ export function generatePlan(request: PlanningRequest, template: PlanTemplate, p
   return { kind: 'preview', preview };
 }
 
+/**
+ * Creates one rolling seven-day demo window without generating later weeks.
+ * The selected prescriptions still come from versioned authored fixture content;
+ * this path does not derive new doses or treat the fixture as reviewed coaching.
+ */
+export function generateWeeklyDemoPlan(request: PlanningRequest, template: PlanTemplate, policy: RuleConfig): GenerationResult {
+  const templateReasons = validateTemplate(template, policy); if (templateReasons.length) return infeasible(templateReasons);
+  const baselineReasons = assessBaseline(request.profile, template.baselineCompatibility); if (baselineReasons.length) return infeasible(baselineReasons);
+  if (!goalMatches(request.goal, template)) return infeasible(['no_compatible_template']);
+  if (request.templateMode !== 'demo' || !template.demoOnly) return infeasible(['unreviewed_content']);
+  if (request.goal.mode === 'fixed_date' && (!request.goal.raceDate || request.goal.raceDate <= request.goal.startDate)) return infeasible(['fixed_date_incompatible']);
+  const firstWeek = template.phases[0]?.weeklySessions?.[0] ?? template.phases[0]?.sessions;
+  if (!firstWeek || firstWeek.length !== template.trainingFrequencyPerWeek) return infeasible(['invalid_content']);
+  if (firstWeek.some((session) => session.target?.kind === 'distance_meters' || session.steps.some((step) => step.target?.kind === 'distance_meters'))) return infeasible(['distance_target_unsupported']);
+  const patterns = compatiblePatterns(template, request.availability);
+  if (!patterns.length) return infeasible(['availability_pattern_incompatible']);
+  const attempts = patterns.map((pattern) => ({ pattern, sessions: scheduleWeeklySessions(template, request.goal, pattern, firstWeek) }));
+  const valid = attempts.find(({ sessions }) => validatePlanConstraints(sessions, request.availability, policy).length === 0);
+  if (!valid) return infeasible(attempts.flatMap(({ sessions }) => validatePlanConstraints(sessions, request.availability, policy)));
+  const goalName = template.supportedGoal === '5k_completion' ? '5K' : template.supportedGoal === '10k_completion' ? '10K' : 'half-marathon';
+  const selectionExplanation = `This first seven-day ${goalName} demo uses the entered availability and the first authored fixture week. No later workouts were generated, and the fixture is not reviewed coaching advice.`;
+  const contentProvenance = (item: PlanTemplate | RuleConfig) => ({ author: item.author, reviewer: item.reviewer, reviewDate: item.reviewDate, rightsSourceNotes: item.rightsSourceNotes, reviewState: item.reviewState, demoOnly: item.demoOnly });
+  return { kind: 'preview', preview: { templateId: template.id, templateVersion: template.semanticVersion, ruleVersion: policy.semanticVersion, provenance: { template: contentProvenance(template), policy: contentProvenance(policy), sourceUrls: [...(template.sourceUrls ?? [])] }, mode: 'demo', inputFingerprint: fingerprint({ scope: 'rolling-seven-day-demo', request, template: [template.id, template.semanticVersion], policy: [policy.id, policy.semanticVersion], pattern: valid.pattern }), sessions: valid.sessions, schedulePattern: valid.pattern, selectionExplanation, warnings: ['demo_content_only'] } };
+}
+
 export function validatePlanConstraints(sessions: GeneratedSession[], availability: PlanningAvailability, policy: RuleConfig): PlanningReasonCode[] {
   const reasons: PlanningReasonCode[] = []; const byWeek = new Map<number, GeneratedSession[]>(); const ordered = [...sessions].sort((a, b) => a.plannedDate.localeCompare(b.plannedDate) || a.role.localeCompare(b.role));
   for (const session of ordered) { const limit = availability.weekdayMinuteLimits[weekday(session.plannedDate)]; if (!limit || session.durationSeconds > limit * 60) reasons.push('day_time_limit_exceeded'); if (availability.unavailableDates.includes(session.plannedDate)) reasons.push('unavailable_date_conflict'); const timedSteps = session.steps.filter((step) => step.durationSeconds !== undefined); if (timedSteps.length > 0 && timedSteps.reduce((total, step) => total + (step.durationSeconds ?? 0), 0) !== session.durationSeconds) reasons.push('step_duration_mismatch'); const weekSessions = byWeek.get(session.week) ?? []; weekSessions.push(session); byWeek.set(session.week, weekSessions); }
@@ -85,6 +110,7 @@ export function validatePlanConstraints(sessions: GeneratedSession[], availabili
 
 export function chooseSessionParameters(fallback: SessionBlueprint[], authoredWeek?: SessionBlueprint[]): SessionBlueprint[] { return authoredWeek ?? fallback; }
 export function scheduleSessions(template: PlanTemplate, goal: PlanningGoal, pattern: number[]): GeneratedSession[] { const result: GeneratedSession[] = []; let week = 1; for (const phase of template.phases) for (let phaseWeek = 0; phaseWeek < phase.weeks; phaseWeek += 1) { const weekStart = addCalendarDays(goal.startDate, (week - 1) * 7); const sessions = chooseSessionParameters(phase.sessions, phase.weeklySessions?.[phaseWeek]); sessions.forEach((session, index) => { const plannedDate = nextWeekday(weekStart, pattern[index]); result.push({ id: `${template.id}:w${week}:${session.role}`, logicalKey: `w${week}:${session.role}`, week, plannedDate, phase: phase.name, role: session.role, durationSeconds: session.durationSeconds, purpose: session.purpose, effortCue: session.effortCue, steps: session.steps, approvedAlternatives: session.approvedAlternatives }); }); week += 1; } return result.sort((a, b) => a.plannedDate.localeCompare(b.plannedDate) || a.role.localeCompare(b.role)); }
+function scheduleWeeklySessions(template: PlanTemplate, goal: PlanningGoal, pattern: number[], sessions: SessionBlueprint[]): GeneratedSession[] { return sessions.map((session, index) => ({ id: `${template.id}:rolling-w1:${session.role}`, logicalKey: `rolling-w1:${session.role}`, week: 1, plannedDate: nextWeekday(goal.startDate, pattern[index]), phase: template.phases[0].name, role: session.role, durationSeconds: session.durationSeconds, purpose: session.purpose, effortCue: session.effortCue, steps: session.steps, approvedAlternatives: session.approvedAlternatives })).sort((left, right) => left.plannedDate.localeCompare(right.plannedDate) || left.role.localeCompare(right.role)); }
 function contentModeAllowed(request: PlanningRequest, template: PlanTemplate): boolean { return request.templateMode === 'demo' ? template.demoOnly : !template.demoOnly && template.reviewState === 'reviewed'; }
 function compareCompatibility(left: PlanTemplate, right: PlanTemplate): number { const fields: (keyof BaselineCompatibility)[] = ['allowedInterruptionStatuses', 'minRecentWeeklyMinutes', 'maxRecentWeeklyMinutes', 'minComfortableDurationMinutes', 'maxComfortableDurationMinutes']; for (const field of fields) { const difference = Number(right.baselineCompatibility?.[field] !== undefined) - Number(left.baselineCompatibility?.[field] !== undefined); if (difference) return difference; } return (right.baselineCompatibility?.requiredFields.length ?? 0) - (left.baselineCompatibility?.requiredFields.length ?? 0); }
 function goalMatches(goal: PlanningGoal, template: PlanTemplate): boolean { return template.supportedGoal === '5k_completion' && goal.distanceMeters === 5000 || template.supportedGoal === '10k_completion' && goal.distanceMeters === 10000 || template.supportedGoal === 'half_marathon_completion' && goal.distanceMeters === 21097; }

@@ -1,0 +1,12 @@
+{
+  "policy_id": "runsensei.foundation.multiweek",
+  "version": "0.3.0-draft",
+  "inheritsNumericalPrescription": "runsensei.foundation.multiweek@0.2.0-draft",
+  "availabilityTimeRequirement": "not_collected",
+  "personalTimeFeasibility": "not_assessed",
+  "review_status": "draft",
+  "reviewer": null,
+  "production_eligible": false,
+  "scope": "Calendar availability only. Inherit all four-week numerical, capacity, frequency, recovery and reassessment rules unchanged. Historical maximum-time answers remain stored but are not constraints for this version.",
+  "preference": "Prefer a unique longest complete-duration session without changing slot order. Ties remain ambiguous."
+}

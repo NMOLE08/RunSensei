@@ -1,0 +1,22 @@
+{
+  "id": "runsensei.foundation.block_reassessment",
+  "version": "0.1.0-draft",
+  "status": "draft",
+  "reviewer": null,
+  "productionEligible": false,
+  "nextPolicy": "runsensei.foundation.multiweek@0.2.0-draft",
+  "classification": "original candidate requiring qualified coaching review",
+  "rules": {
+    "completion": "Every assigned workout must have a current completed outcome with comparable actual total and running duration at least the prescribed duration.",
+    "feedback": "Every current outcome must report comfortable difficulty, no unusual fatigue and no discomfort. RPE is retained as evidence but no numerical RPE threshold is applied.",
+    "health": "Any historical pain concern preserves a review hold, including corrected or removed outcomes. No clearance mechanism is authorized here.",
+    "confirmation": "Current capability must be explicitly reconfirmed after the last workout and no later than evaluation. A new block must start after the original block and all actual outcomes.",
+    "interruption": "A new interruption requires reassessment; elapsed calendar time never establishes successful completion.",
+    "actualSequence": "Actual dates must not precede the block, must retain assignment order, and must satisfy the referenced foundation minimum rest-day rule. Otherwise review is required; no automatic make-up sessions.",
+    "transformation": "Recalculate only through the exact existing foundation policy from independently confirmed current capability; never increase workload automatically from completion.",
+    "continuousTransition": "A previously walk-run block may transition to continuous foundation only when confirmed current continuous capability supports every newly generated running segment without recovery breaks.",
+    "unsupported": "Automatic repetition, regression, aerobic-base and race-preparation transitions require separate authored rules. Return policy_gap."
+  },
+  "evidence": [{"source": "RunSensei original research decision design", "url": null, "limitations": "Completion and self-report do not establish injury safety, medical clearance or race readiness. These categorical decisions are not published coaching prescriptions."}],
+  "releaseBlockers": ["Qualified coach review of every decision condition", "Independent review of the referenced foundation prescription", "Clinical review of health-hold wording"]
+}

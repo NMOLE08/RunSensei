@@ -1,0 +1,844 @@
+{
+  "policy_id": "runsensei.5k.first_5k_run_walk.workout_structure",
+  "version": "0.1.0",
+  "goal_family": "5k",
+  "plan_family": "first_5k_true_beginner_run_walk",
+  "title": "Executable 12-week timed run/walk session structure",
+  "algorithm_ids": [
+    14
+  ],
+  "runner_eligibility": {
+    "eligible_profile": "Adult beginner working toward completing 5 kilometres with walking allowed, not a time goal",
+    "minimum_age_years": 18,
+    "can_walk_30_minutes_comfortably": true,
+    "current_training_requirement": "No running history or limited recent running; not suitable for advanced performance goals",
+    "do_not_auto_enroll_if": [
+      "current concerning symptoms or injury",
+      "user cannot comfortably walk 30 minutes",
+      "user requests a performance/time-based 5K plan",
+      "user is under 18"
+    ],
+    "note": "These are first-release product-scope gates, not medical clearance or diagnostic screening."
+  },
+  "required_inputs": [
+    "plan_week",
+    "session_code",
+    "reviewed_warmup_and_cooldown",
+    "runner_eligibility"
+  ],
+  "training_rules": {
+    "time_resolution_seconds": 1,
+    "schedule_source": "Original RunSensei draft, inspired by beginner principles; not a reproduction of an NHS or NYRR plan.",
+    "warmup": {
+      "type": "walking",
+      "duration_seconds": 300,
+      "rpe_range": [
+        1,
+        3
+      ]
+    },
+    "cooldown": {
+      "type": "walking",
+      "duration_seconds": 300,
+      "rpe_range": [
+        1,
+        3
+      ]
+    },
+    "main_step_types": [
+      "run_walk_repeats",
+      "walk_run_5k_event"
+    ],
+    "week_by_week_session_templates": [
+      {
+        "week": 1,
+        "sessions": {
+          "A": {
+            "type": "run_walk_repeats",
+            "run_seconds": 60,
+            "walk_seconds": 120,
+            "repetitions": 6,
+            "main_movement_seconds": 1080,
+            "actual_running_seconds": 360,
+            "walking_recovery_seconds": 720,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "B": {
+            "type": "run_walk_repeats",
+            "run_seconds": 60,
+            "walk_seconds": 120,
+            "repetitions": 6,
+            "main_movement_seconds": 1080,
+            "actual_running_seconds": 360,
+            "walking_recovery_seconds": 720,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "C": {
+            "type": "run_walk_repeats",
+            "run_seconds": 60,
+            "walk_seconds": 120,
+            "repetitions": 7,
+            "main_movement_seconds": 1260,
+            "actual_running_seconds": 420,
+            "walking_recovery_seconds": 840,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "week": 2,
+        "sessions": {
+          "A": {
+            "type": "run_walk_repeats",
+            "run_seconds": 90,
+            "walk_seconds": 120,
+            "repetitions": 6,
+            "main_movement_seconds": 1260,
+            "actual_running_seconds": 540,
+            "walking_recovery_seconds": 720,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "B": {
+            "type": "run_walk_repeats",
+            "run_seconds": 90,
+            "walk_seconds": 120,
+            "repetitions": 6,
+            "main_movement_seconds": 1260,
+            "actual_running_seconds": 540,
+            "walking_recovery_seconds": 720,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "C": {
+            "type": "run_walk_repeats",
+            "run_seconds": 90,
+            "walk_seconds": 120,
+            "repetitions": 7,
+            "main_movement_seconds": 1470,
+            "actual_running_seconds": 630,
+            "walking_recovery_seconds": 840,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "week": 3,
+        "sessions": {
+          "A": {
+            "type": "run_walk_repeats",
+            "run_seconds": 120,
+            "walk_seconds": 120,
+            "repetitions": 6,
+            "main_movement_seconds": 1440,
+            "actual_running_seconds": 720,
+            "walking_recovery_seconds": 720,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "B": {
+            "type": "run_walk_repeats",
+            "run_seconds": 120,
+            "walk_seconds": 120,
+            "repetitions": 6,
+            "main_movement_seconds": 1440,
+            "actual_running_seconds": 720,
+            "walking_recovery_seconds": 720,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "C": {
+            "type": "run_walk_repeats",
+            "run_seconds": 120,
+            "walk_seconds": 120,
+            "repetitions": 7,
+            "main_movement_seconds": 1680,
+            "actual_running_seconds": 840,
+            "walking_recovery_seconds": 840,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "week": 4,
+        "sessions": {
+          "A": {
+            "type": "run_walk_repeats",
+            "run_seconds": 120,
+            "walk_seconds": 120,
+            "repetitions": 5,
+            "main_movement_seconds": 1200,
+            "actual_running_seconds": 600,
+            "walking_recovery_seconds": 600,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "B": {
+            "type": "run_walk_repeats",
+            "run_seconds": 120,
+            "walk_seconds": 120,
+            "repetitions": 5,
+            "main_movement_seconds": 1200,
+            "actual_running_seconds": 600,
+            "walking_recovery_seconds": 600,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "C": {
+            "type": "run_walk_repeats",
+            "run_seconds": 120,
+            "walk_seconds": 120,
+            "repetitions": 6,
+            "main_movement_seconds": 1440,
+            "actual_running_seconds": 720,
+            "walking_recovery_seconds": 720,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "week": 5,
+        "sessions": {
+          "A": {
+            "type": "run_walk_repeats",
+            "run_seconds": 180,
+            "walk_seconds": 120,
+            "repetitions": 5,
+            "main_movement_seconds": 1500,
+            "actual_running_seconds": 900,
+            "walking_recovery_seconds": 600,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "B": {
+            "type": "run_walk_repeats",
+            "run_seconds": 180,
+            "walk_seconds": 120,
+            "repetitions": 5,
+            "main_movement_seconds": 1500,
+            "actual_running_seconds": 900,
+            "walking_recovery_seconds": 600,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "C": {
+            "type": "run_walk_repeats",
+            "run_seconds": 180,
+            "walk_seconds": 120,
+            "repetitions": 6,
+            "main_movement_seconds": 1800,
+            "actual_running_seconds": 1080,
+            "walking_recovery_seconds": 720,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "week": 6,
+        "sessions": {
+          "A": {
+            "type": "run_walk_repeats",
+            "run_seconds": 240,
+            "walk_seconds": 120,
+            "repetitions": 5,
+            "main_movement_seconds": 1800,
+            "actual_running_seconds": 1200,
+            "walking_recovery_seconds": 600,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "B": {
+            "type": "run_walk_repeats",
+            "run_seconds": 240,
+            "walk_seconds": 120,
+            "repetitions": 5,
+            "main_movement_seconds": 1800,
+            "actual_running_seconds": 1200,
+            "walking_recovery_seconds": 600,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "C": {
+            "type": "run_walk_repeats",
+            "run_seconds": 240,
+            "walk_seconds": 120,
+            "repetitions": 6,
+            "main_movement_seconds": 2160,
+            "actual_running_seconds": 1440,
+            "walking_recovery_seconds": 720,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "week": 7,
+        "sessions": {
+          "A": {
+            "type": "run_walk_repeats",
+            "run_seconds": 300,
+            "walk_seconds": 120,
+            "repetitions": 4,
+            "main_movement_seconds": 1680,
+            "actual_running_seconds": 1200,
+            "walking_recovery_seconds": 480,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "B": {
+            "type": "run_walk_repeats",
+            "run_seconds": 300,
+            "walk_seconds": 120,
+            "repetitions": 5,
+            "main_movement_seconds": 2100,
+            "actual_running_seconds": 1500,
+            "walking_recovery_seconds": 600,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "C": {
+            "type": "run_walk_repeats",
+            "run_seconds": 300,
+            "walk_seconds": 120,
+            "repetitions": 6,
+            "main_movement_seconds": 2520,
+            "actual_running_seconds": 1800,
+            "walking_recovery_seconds": 720,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "week": 8,
+        "sessions": {
+          "A": {
+            "type": "run_walk_repeats",
+            "run_seconds": 240,
+            "walk_seconds": 120,
+            "repetitions": 4,
+            "main_movement_seconds": 1440,
+            "actual_running_seconds": 960,
+            "walking_recovery_seconds": 480,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "B": {
+            "type": "run_walk_repeats",
+            "run_seconds": 240,
+            "walk_seconds": 120,
+            "repetitions": 4,
+            "main_movement_seconds": 1440,
+            "actual_running_seconds": 960,
+            "walking_recovery_seconds": 480,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "C": {
+            "type": "run_walk_repeats",
+            "run_seconds": 240,
+            "walk_seconds": 120,
+            "repetitions": 5,
+            "main_movement_seconds": 1800,
+            "actual_running_seconds": 1200,
+            "walking_recovery_seconds": 600,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "week": 9,
+        "sessions": {
+          "A": {
+            "type": "run_walk_repeats",
+            "run_seconds": 360,
+            "walk_seconds": 120,
+            "repetitions": 4,
+            "main_movement_seconds": 1920,
+            "actual_running_seconds": 1440,
+            "walking_recovery_seconds": 480,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "B": {
+            "type": "run_walk_repeats",
+            "run_seconds": 360,
+            "walk_seconds": 120,
+            "repetitions": 4,
+            "main_movement_seconds": 1920,
+            "actual_running_seconds": 1440,
+            "walking_recovery_seconds": 480,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "C": {
+            "type": "run_walk_repeats",
+            "run_seconds": 360,
+            "walk_seconds": 120,
+            "repetitions": 5,
+            "main_movement_seconds": 2400,
+            "actual_running_seconds": 1800,
+            "walking_recovery_seconds": 600,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "week": 10,
+        "sessions": {
+          "A": {
+            "type": "run_walk_repeats",
+            "run_seconds": 540,
+            "walk_seconds": 120,
+            "repetitions": 3,
+            "main_movement_seconds": 1980,
+            "actual_running_seconds": 1620,
+            "walking_recovery_seconds": 360,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "B": {
+            "type": "run_walk_repeats",
+            "run_seconds": 540,
+            "walk_seconds": 120,
+            "repetitions": 3,
+            "main_movement_seconds": 1980,
+            "actual_running_seconds": 1620,
+            "walking_recovery_seconds": 360,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "C": {
+            "type": "run_walk_repeats",
+            "run_seconds": 540,
+            "walk_seconds": 120,
+            "repetitions": 4,
+            "main_movement_seconds": 2640,
+            "actual_running_seconds": 2160,
+            "walking_recovery_seconds": 480,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "week": 11,
+        "sessions": {
+          "A": {
+            "type": "run_walk_repeats",
+            "run_seconds": 600,
+            "walk_seconds": 120,
+            "repetitions": 3,
+            "main_movement_seconds": 2160,
+            "actual_running_seconds": 1800,
+            "walking_recovery_seconds": 360,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "B": {
+            "type": "run_walk_repeats",
+            "run_seconds": 600,
+            "walk_seconds": 120,
+            "repetitions": 3,
+            "main_movement_seconds": 2160,
+            "actual_running_seconds": 1800,
+            "walking_recovery_seconds": 360,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "C": {
+            "type": "run_walk_repeats",
+            "run_seconds": 600,
+            "walk_seconds": 120,
+            "repetitions": 4,
+            "main_movement_seconds": 2880,
+            "actual_running_seconds": 2400,
+            "walking_recovery_seconds": 480,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "week": 12,
+        "sessions": {
+          "A": {
+            "type": "run_walk_repeats",
+            "run_seconds": 480,
+            "walk_seconds": 120,
+            "repetitions": 2,
+            "main_movement_seconds": 1200,
+            "actual_running_seconds": 960,
+            "walking_recovery_seconds": 240,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "B": {
+            "type": "run_walk_repeats",
+            "run_seconds": 360,
+            "walk_seconds": 120,
+            "repetitions": 2,
+            "main_movement_seconds": 960,
+            "actual_running_seconds": 720,
+            "walking_recovery_seconds": 240,
+            "rpe_target_running": [
+              3,
+              4
+            ],
+            "rpe_target_walking": [
+              1,
+              3
+            ]
+          },
+          "C": {
+            "type": "walk_run_5k_event",
+            "distance_meters": 5000,
+            "pace": "self_selected_comfortable",
+            "walking_breaks_allowed": true,
+            "main_movement_seconds": null,
+            "actual_running_seconds": null,
+            "completion_target": "distance_not_time"
+          }
+        }
+      }
+    ],
+    "step_generation": [
+      "Create 300-second walking warm-up",
+      "For run_walk_repeats, repeat exactly N times: run for run_seconds at RPE 3-4 followed by walk for walk_seconds at RPE 1-3",
+      "For Week 12 session C, execute 5,000 m walk/run distance event with no required split pace; allow user-selected walk breaks",
+      "Create 300-second walking cool-down",
+      "Sum all known times and verify against Weekly Load and Volume Distribution policies",
+      "Never time-budget the 5k event until actual completed duration is known"
+    ],
+    "label_names": {
+      "A": "Easy run/walk",
+      "B": "Easy run/walk",
+      "C": "Extended easy run/walk"
+    },
+    "event_label": "First 5K completion event",
+    "do_not_insert_hard_workouts": true
+  },
+  "fallback_rules": {
+    "missing_template_week_or_role": "BLOCK_INCOMPLETE_POLICY",
+    "runner_needs_early_walk_break": "Allow walking and record feedback; do not automatically add missed running seconds",
+    "distance_data_unavailable_for_event": "Allow measured/manual 5km completion recording, but do not invent distance or event duration"
+  },
+  "safety_constraints": {
+    "exactly_3_sessions_per_week": true,
+    "total_session_count": 36,
+    "all_timed_steps_nonnegative": true,
+    "running_rpe_max": 4,
+    "no_unreviewed_reps": true,
+    "event_distance_meters": 5000
+  },
+  "evidence_sources": [
+    {
+      "source_id": "nhs_couch_to_5k",
+      "type": "external_guidance",
+      "title": "NHS Better Health - Couch to 5K running plan",
+      "url": "https://www.nhs.uk/better-health/get-active/get-running-with-couch-to-5k/couch-to-5k-running-plan/",
+      "supports": "Beginner run/walk programming, 3 run days per week, rest days between runs, five-minute walking warm-up and cool-down, self-paced effort. NHS uses 9 weeks; this pack is an original 12-week proposal, not the NHS schedule."
+    },
+    {
+      "source_id": "nhs_running_injuries",
+      "type": "external_guidance",
+      "title": "NHS - Knee pain and other running injuries",
+      "url": "https://www.nhs.uk/live-well/exercise/knee-pain-and-other-running-injuries/",
+      "supports": "Build up gradually, warm up and cool down, avoid running through pain; not a source of exact numeric progression limits."
+    },
+    {
+      "source_id": "nyrr_5k_conservative_pdf",
+      "type": "user_supplied_reference",
+      "title": "NYRR 5K Training Plan Conservative (12 Weeks)",
+      "local_file": "5k Training Plan Conservative.pdf",
+      "pages": [
+        1,
+        2,
+        3
+      ],
+      "supports": "Reference for RPE descriptors, structured sessions and 5K goal race. NOT a true zero-running beginner schedule: includes early speedwork and tempo sessions."
+    }
+  ],
+  "review_status": "draft",
+  "reviewer": {
+    "name": null,
+    "credentials": null,
+    "reviewed_at": null,
+    "approval_record_id": null
+  },
+  "test_cases": [
+    {
+      "id": "P14_W1_A",
+      "given": {
+        "week": 1,
+        "session": "A"
+      },
+      "expected": {
+        "warmup_seconds": 300,
+        "run_seconds": 60,
+        "walk_seconds": 120,
+        "repetitions": 6,
+        "cooldown_seconds": 300,
+        "total_seconds": 1680
+      }
+    },
+    {
+      "id": "P14_W11_C",
+      "given": {
+        "week": 11,
+        "session": "C"
+      },
+      "expected": {
+        "run_seconds": 600,
+        "walk_seconds": 120,
+        "repetitions": 4,
+        "main_seconds": 2880
+      }
+    },
+    {
+      "id": "P14_WEEK12_EVENT",
+      "given": {
+        "week": 12,
+        "session": "C"
+      },
+      "expected": {
+        "distance_meters": 5000,
+        "event_duration_seconds": null
+      }
+    },
+    {
+      "id": "P14_INVALID_WEEK",
+      "given": {
+        "week": 13,
+        "session": "A"
+      },
+      "expected": {
+        "decision": "BLOCK_INCOMPLETE_POLICY"
+      }
+    }
+  ],
+  "release_gate": {
+    "can_activate": false,
+    "requires": [
+      "qualified_running_coach_signoff",
+      "clinical_safety_review_for_symptom_handling",
+      "test_suite_pass",
+      "versioned_policy_catalog_approval"
+    ],
+    "on_missing_or_unapproved": "BLOCK_PLAN_GENERATION_NO_SILENT_FALLBACK"
+  },
+  "notes": "DRAFT. Numerical tables are original engineering proposals needing coaching validation. Do not describe as an NYRR or NHS exact plan."
+}

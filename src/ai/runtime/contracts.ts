@@ -3,13 +3,18 @@ import type { QWEN_MODEL } from '@/ai/modelManifest';
 export type ModelManifest = typeof QWEN_MODEL;
 export type ModelProgress = { completedBytes: number; totalBytes: number; fraction: number };
 export type ModelFileInfo = { exists: boolean; byteSize: number; path: string | null };
+export type PartialModelFileInfo = { exists: boolean; completedBytes: number; totalBytes: number; resumable: boolean };
+export type ModelDownloadResult = { kind: 'complete'; partialPath: string } | { kind: 'paused'; progress: ModelProgress };
 
 export interface ModelFileStore {
   availableStorageBytes(): Promise<number>;
   inspect(): Promise<ModelFileInfo>;
-  download(manifest: ModelManifest, onProgress: (progress: ModelProgress) => void): Promise<string>;
+  inspectPartial(manifest: ModelManifest): Promise<PartialModelFileInfo>;
+  download(manifest: ModelManifest, onProgress: (progress: ModelProgress) => void): Promise<ModelDownloadResult>;
+  pauseDownload(): Promise<void>;
   cancelDownload(): Promise<void>;
-  digestSha256(): Promise<string>;
+  digestSha256(target: 'partial' | 'verified'): Promise<string>;
+  promoteVerified(manifest: ModelManifest): Promise<string>;
   remove(): Promise<void>;
 }
 
