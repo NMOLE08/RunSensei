@@ -17,6 +17,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { publishCurrentBeginner5kWeekOne } from '@/application/currentBeginner5kPublication';
 import { planPreviewIdentityKey } from '@/application/planPreviewIdentity';
 import { selectResearchPreview } from '@/features/execution/planResearchPreviewSelection';
+import { initialPlanFocusRefreshState, nextPlanFocusRefresh } from '@/features/execution/planPreviewRefreshLifecycle';
 
 const asDate = (value: string) => value as `${number}-${number}-${number}`;
 
@@ -33,15 +34,17 @@ function AccountPlanScreen() {
   const previewIdentity = previewContext ? planPreviewIdentityKey(previewContext) : 'loading';
   const experimentalHalfPreview = useExperimentalHalfMarathonPreview(experimental5kPreviewEnabled, previewContext ?? null);
   const reloadAvailability = availability.reload;
-  const reloadHalfPreview = experimentalHalfPreview.reload;
-  const hasFocused = useRef(false);
+  const focusRefreshState = useRef(initialPlanFocusRefreshState);
   const [publicationError, setPublicationError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const publicationInFlight = useRef(false);
   useFocusEffect(useCallback(() => {
-    if (!hasFocused.current) { hasFocused.current = true; return; }
-    void Promise.all([reload(), reloadAvailability(), ...(experimental5kPreviewEnabled ? [reloadHalfPreview()] : [])]);
-  }, [reload, reloadAvailability, reloadHalfPreview]));
+    const decision = nextPlanFocusRefresh(focusRefreshState.current);
+    focusRefreshState.current = decision.state;
+    if (decision.refreshActivePlan || decision.refreshAvailability) {
+      void Promise.all([decision.refreshActivePlan ? reload() : Promise.resolve(), decision.refreshAvailability ? reloadAvailability() : Promise.resolve()]);
+    }
+  }, [reload, reloadAvailability]));
 
   const publishWeekOne = useCallback(async () => {
     if (publicationInFlight.current) return;

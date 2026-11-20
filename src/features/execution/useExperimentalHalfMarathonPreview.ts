@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { openCurrentExperimentalHalfMarathonPreviewWithProvenance, type CurrentExperimentalHalfMarathonPreview, type CurrentExperimentalHalfMarathonPreviewResponse } from '@/application/experimentalHalfMarathonPreview';
 import { planPreviewIdentityKey, samePlanPreviewIdentity, type PlanPreviewIdentity } from '@/application/planPreviewIdentity';
+import { retainEquivalentPreviewContext, shouldApplyPreviewRequest, shouldRequestPreviewForContext } from './planPreviewRefreshLifecycle';
 
 type PreviewState = {
   status: 'disabled' | 'loading' | 'ready' | 'unavailable';
@@ -21,31 +22,41 @@ export function resolveExperimentalPreviewResponse(requested: PlanPreviewIdentit
 
 export function useExperimentalHalfMarathonPreview(enabled: boolean, requested: PlanPreviewIdentity | null) {
   const refreshKey = requested ? planPreviewIdentityKey(requested) : 'loading';
-  const evaluationDate = requested?.evaluationDate ?? null;
+  const stableRequested = useRef<PlanPreviewIdentity | null>(requested);
+  stableRequested.current = retainEquivalentPreviewContext(stableRequested.current, requested);
   const [state, setState] = useState<PreviewState>({ status: enabled ? 'loading' : 'disabled', data: null, error: null, identity: null, source: null });
   const requestId = useRef(0);
+  const requestedIdentity = useRef<string | null>(null);
   const request = useCallback((requestContext: PlanPreviewIdentity) => {
     const identity = planPreviewIdentityKey(requestContext);
     const id = ++requestId.current;
-    return openCurrentExperimentalHalfMarathonPreviewWithProvenance(evaluationDate ?? undefined)
-      .then((response) => { if (requestId.current === id) setState(resolveExperimentalPreviewResponse(requestContext, response)); })
-      .catch((error: unknown) => { if (requestId.current === id) setState({ status: 'unavailable', data: null, error: error instanceof Error ? error.message : 'Experimental half-marathon preview could not be opened.', identity, source: null }); });
-  }, [evaluationDate]);
+    return openCurrentExperimentalHalfMarathonPreviewWithProvenance(requestContext.evaluationDate ?? undefined)
+      .then((response) => { if (shouldApplyPreviewRequest(requestId.current, id)) setState(resolveExperimentalPreviewResponse(requestContext, response)); })
+      .catch((error: unknown) => { if (shouldApplyPreviewRequest(requestId.current, id)) setState({ status: 'unavailable', data: null, error: error instanceof Error ? error.message : 'Experimental half-marathon preview could not be opened.', identity, source: null }); });
+  }, []);
   const reload = useCallback(() => {
-    if (!enabled || !requested) return Promise.resolve();
+    if (!enabled || !stableRequested.current) return Promise.resolve();
     setState((current) => current.identity === refreshKey
       ? { ...current, status: 'loading', error: null }
       : { status: 'loading', data: null, error: null, identity: null, source: null });
-    return request(requested);
-  }, [enabled, refreshKey, request, requested]);
+    requestedIdentity.current = refreshKey;
+    return request(stableRequested.current);
+  }, [enabled, refreshKey, request]);
   useEffect(() => {
-    if (!enabled || !requested) {
+    const requestContext = stableRequested.current;
+    if (!enabled || !requestContext) {
       requestId.current += 1;
+      requestedIdentity.current = null;
       return;
     }
-    void request(requested);
-    return () => { requestId.current += 1; };
-  }, [enabled, refreshKey, request, requested]);
+    if (!shouldRequestPreviewForContext(requestedIdentity.current, enabled, requestContext)) return;
+    requestedIdentity.current = refreshKey;
+    void request(requestContext);
+    return () => {
+      requestId.current += 1;
+      if (requestedIdentity.current === refreshKey) requestedIdentity.current = null;
+    };
+  }, [enabled, refreshKey, request]);
   // Keeping the previous result internally lets a same-identity refresh avoid
   // a flash. Expose it only when it was produced for this exact context.
   const visibleState: PreviewState = !enabled
