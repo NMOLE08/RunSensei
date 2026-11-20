@@ -31,7 +31,7 @@ function AccountPlanScreen() {
   const availability = usePlanAvailability();
   const previewContext = availability.data?.previewContext;
   const previewIdentity = previewContext ? planPreviewIdentityKey(previewContext) : 'loading';
-  const experimentalHalfPreview = useExperimentalHalfMarathonPreview(experimental5kPreviewEnabled, previewIdentity, previewContext?.evaluationDate ?? null);
+  const experimentalHalfPreview = useExperimentalHalfMarathonPreview(experimental5kPreviewEnabled, previewContext ?? null);
   const reloadAvailability = availability.reload;
   const reloadHalfPreview = experimentalHalfPreview.reload;
   const hasFocused = useRef(false);
@@ -68,7 +68,7 @@ function AccountPlanScreen() {
     const publication = availability.data.beginner5kPublication;
     if (experimental5kPreviewEnabled && goal === '5k' && publication?.preview) return <Screen><Experimental5kPreviewCard value={publication.preview} onRegenerate={availability.reload} activationStatus={publication.status} canPublish={publication.canPublish} onPublish={publishWeekOne} publishing={publishing} publicationError={publicationError} /></Screen>;
     const researchPreview = selectResearchPreview(experimental5kPreviewEnabled, goal, previewIdentity, experimentalHalfPreview);
-    if (researchPreview.kind === 'preview') return <Screen>{researchPreview.foundation && researchPreview.value.kind === 'foundation_program' && <Button label="Saved research blocks" tone="secondary" onPress={() => router.push('/research-foundation' as Href)} />}<ExperimentalHalfMarathonPreviewCard value={researchPreview.value} onRegenerate={experimentalHalfPreview.reload} /></Screen>;
+    if (researchPreview.kind === 'preview') return <Screen>{researchPreview.foundation && researchPreview.value.kind === 'foundation_program' && <Button label="Saved research blocks" tone="secondary" onPress={() => router.push('/research-foundation' as Href)} />}<ExperimentalHalfMarathonPreviewCard value={researchPreview.value} foundation={researchPreview.foundation} onRegenerate={experimentalHalfPreview.reload} /></Screen>;
     if (researchPreview.kind === 'loading') return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><StateCard title="Checking research preview">Comparing saved information with the bundled draft pathways. This cannot activate a plan.</StateCard></Screen>;
     if (researchPreview.kind === 'error') return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><StateCard actionLabel="Try again" onAction={experimentalHalfPreview.reload} title="Research preview unavailable">{researchPreview.message}</StateCard></Screen>;
     if (experimental5kPreviewEnabled && goal === '5k' && !publication?.preview && publication) return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><PlanAvailabilityCard value={availability.data} /><StateCard actionLabel="Try again" onAction={availability.reload} title="Research preview unavailable">{publication.status.message}</StateCard></Screen>;

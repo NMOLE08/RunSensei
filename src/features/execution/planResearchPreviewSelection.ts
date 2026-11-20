@@ -6,6 +6,7 @@ export type HalfPreviewSnapshot = Readonly<{
   data: CurrentExperimentalHalfMarathonPreview | null;
   error: string | null;
   identity: string | null;
+  source: 'half_marathon' | 'foundation' | 'not_applicable' | null;
 }>;
 
 export type ResearchPreviewSelection =
@@ -24,18 +25,18 @@ export function selectResearchPreview(
   currentIdentity: string,
   state: HalfPreviewSnapshot,
 ): ResearchPreviewSelection {
-  if (!enabled || state.identity !== currentIdentity) {
+  if (!enabled) return { kind: 'none' };
+  if (state.identity !== currentIdentity) {
     return goal === 'half_marathon' && state.status === 'loading' ? { kind: 'loading' } : { kind: 'none' };
   }
   const value = state.data;
   if (goal === 'half_marathon') {
-    if (value) return { kind: 'preview', value, foundation: value.kind === 'foundation_program' };
+    if (value && state.source !== 'not_applicable') return { kind: 'preview', value, foundation: state.source === 'foundation' };
     if (state.status === 'loading') return { kind: 'loading' };
     if (state.status === 'unavailable') return { kind: 'error', message: state.error ?? 'The research preview could not be checked. No draft workouts are shown until it is available.' };
     return { kind: 'none' };
   }
-  if (!value || goal === null || goal === 'habit') return { kind: 'none' };
-  if (value.kind === 'foundation_program') return { kind: 'preview', value, foundation: true };
-  if (value.kind === 'unavailable' && !value.reasonCodes.includes('goal_not_half_marathon')) return { kind: 'preview', value, foundation: false };
+  if (!value || goal === null || goal === 'habit' || state.source !== 'foundation') return { kind: 'none' };
+  if (value.kind === 'foundation_program' || value.kind === 'blocked' || value.kind === 'unavailable') return { kind: 'preview', value, foundation: true };
   return { kind: 'none' };
 }

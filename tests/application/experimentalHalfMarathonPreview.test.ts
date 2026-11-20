@@ -1,4 +1,5 @@
-import { openCurrentExperimentalHalfMarathonPreview } from '@/application/experimentalHalfMarathonPreview';
+import { openCurrentExperimentalHalfMarathonPreview, openCurrentExperimentalHalfMarathonPreviewWithProvenance } from '@/application/experimentalHalfMarathonPreview';
+import { previewIdentityFor } from '@/application/planPreviewIdentity';
 import { loadCurrentAccountPlanFacts } from '@/application/planAvailability';
 import { emptyFitnessAssessmentDraft } from '@/domain/assessment/types';
 import { assessFitness } from '@/domain/assessment/assessFitness';
@@ -9,6 +10,19 @@ const mockedFacts = loadCurrentAccountPlanFacts as jest.MockedFunction<typeof lo
 function facts(ownerId: string, overrides = {}) { const draft = { ...emptyFitnessAssessmentDraft(ownerId, 'Asia/Calcutta'), goal: 'half_marathon' as const, goalFocus: 'finish' as const, planStartDate: '2027-01-04', trainingDays: [1, 3, 6], minuteLimits: { 1: '75', 3: '75', 6: '100' }, minuteLimitConfirmedDays: [1, 3, 6], interruption: 'none' as const, weeklyMinutes: '110', weeklyEvidenceConfirmedAt: '2026-12-30', currentCapabilityConfirmedAt: '2026-12-30', currentTrainingStatus: 'currently_training' as const, lastRunningDate: '2026-12-30', interruptionReason: 'schedule_or_travel' as const, longestSessionMinutes: '45', longestSessionDate: '2026-12-30', comfortableRunMinutes: '40', ...overrides }; return { ownerId, draft, assessment: assessFitness(draft, '2027-01-01T00:00:00.000Z'), activeSnapshot: null }; }
 
 describe('experimental half-marathon preview application adapter', () => {
+  it('returns provenance from the exact facts used for an applicable result', async () => {
+    const value = facts('account-provenance');
+    mockedFacts.mockResolvedValue(value);
+    const result = await openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01');
+    expect(result.previewContext).toEqual(previewIdentityFor(value.ownerId, value.draft, expect.any(String), '2027-01-01'));
+    expect(result).toMatchObject({ source: 'half_marathon', value: { kind: 'simulation' } });
+  });
+  it('preserves foundation-blocker provenance from the actual loaded 10K facts', async () => {
+    const value = facts('account-foundation', { goal: '10k', foundationEvidenceConfirmedAt: '2027-01-01', foundationFrequency: null });
+    value.assessment = assessFitness(value.draft, '2027-01-01T00:00:00.000Z');
+    mockedFacts.mockResolvedValue(value);
+    await expect(openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01')).resolves.toMatchObject({ source: 'foundation', previewContext: { ownerId: 'account-foundation', goal: '10k' }, value: { kind: 'blocked', reasonCodes: ['foundation_frequency_required'] } });
+  });
   it('routes confirmed current running to a validated foundation preview without using historical longest capacity', async () => {
     const value = facts('foundation-account', { weeklyMinutes: '50', comfortableRunMinutes: '45', longestSessionMinutes: '75', longestSessionDate: '2025-01-01', currentCapabilityConfirmedAt: '', foundationEvidenceConfirmedAt: '2027-01-01', trainingDays: [0, 1, 3, 6], minuteLimits: { 0: '30', 1: '30', 3: '30', 6: '30' }, minuteLimitConfirmedDays: [0, 1, 3, 6] });
     mockedFacts.mockResolvedValue(value);

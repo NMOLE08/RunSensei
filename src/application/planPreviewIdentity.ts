@@ -14,12 +14,12 @@ export type PlanPreviewIdentity = Readonly<{
   evaluationDate: string | null;
 }>;
 
-export function previewIdentityFor(ownerId: string, draft: FitnessAssessmentDraft | null, now = new Date().toISOString()): PlanPreviewIdentity {
+export function previewIdentityFor(ownerId: string, draft: FitnessAssessmentDraft | null, now = new Date().toISOString(), evaluationDate?: string | null): PlanPreviewIdentity {
   return {
     ownerId,
     goal: draft?.goal ?? null,
     assessmentFingerprint: draft ? assessmentEvidenceFingerprint(draft) : null,
-    evaluationDate: draft ? runnerLocalDate(now, draft.timezone) : null,
+    evaluationDate: draft ? evaluationDate ?? runnerLocalDate(now, draft.timezone) : null,
   };
 }
 

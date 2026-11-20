@@ -7,30 +7,47 @@ import { nextMondayOnOrAfter } from '@/domain/planning/runnerConstraints';
 import { localDateOnly } from '@/features/execution/viewModel';
 import { isDateOnly } from '@/domain/calendar/dateOnly';
 import { assessHalfMarathonReturnReadiness, type HalfMarathonReturnReadiness } from '@/domain/planning/halfMarathonReturnReadiness';
+import { previewIdentityFor, type PlanPreviewIdentity } from './planPreviewIdentity';
 
 export type CurrentExperimentalHalfMarathonPreview = HalfMarathonResearchSimulation | ReturnType<typeof generateFoundationProgram> | { kind: 'unavailable'; reasonCodes: readonly string[]; missingEvidence?: readonly string[]; assessmentReasons?: readonly string[]; readiness?: HalfMarathonReturnReadiness; researchOnly: true; productionEligible: false };
+export type CurrentExperimentalHalfMarathonPreviewResponse = Readonly<{
+  value: CurrentExperimentalHalfMarathonPreview;
+  previewContext: PlanPreviewIdentity;
+  source: 'half_marathon' | 'foundation' | 'not_applicable';
+}>;
 
 /** Account-scoped read-only draft preview. It never creates a Plan or assignment. */
 export async function openCurrentExperimentalHalfMarathonPreview(evaluationDate?: string): Promise<CurrentExperimentalHalfMarathonPreview> {
+  return (await openCurrentExperimentalHalfMarathonPreviewWithProvenance(evaluationDate)).value;
+}
+
+/**
+ * Returns the candidate together with the exact account-local facts used to
+ * generate it. Consumers must compare this provenance with their requested
+ * Plan context before rendering research content.
+ */
+export async function openCurrentExperimentalHalfMarathonPreviewWithProvenance(evaluationDate?: string): Promise<CurrentExperimentalHalfMarathonPreviewResponse> {
   const facts = await loadCurrentAccountPlanFacts();
-  if (!facts.draft) return { kind: 'unavailable', reasonCodes: ['onboarding_or_assessment_missing'], researchOnly: true, productionEligible: false };
+  const previewContext = previewIdentityFor(facts.ownerId, facts.draft, new Date().toISOString(), evaluationDate ?? null);
+  const unavailable = (reasonCodes: readonly string[], source: CurrentExperimentalHalfMarathonPreviewResponse['source'], extra: Omit<Extract<CurrentExperimentalHalfMarathonPreview, { kind: 'unavailable' }>, 'kind' | 'reasonCodes' | 'researchOnly' | 'productionEligible'> = {}) => ({ value: { kind: 'unavailable' as const, reasonCodes, researchOnly: true as const, productionEligible: false as const, ...extra }, previewContext, source });
+  if (!facts.draft) return unavailable(['onboarding_or_assessment_missing'], 'not_applicable');
   const foundationRequested = isDateOnly(facts.draft.foundationEvidenceConfirmedAt ?? '');
-  if (facts.draft.goal !== 'half_marathon' && !foundationRequested) return { kind: 'unavailable', reasonCodes: ['goal_not_half_marathon'], researchOnly: true, productionEligible: false };
-  if (!facts.assessment) return { kind: 'unavailable', reasonCodes: ['onboarding_or_assessment_missing'], researchOnly: true, productionEligible: false };
+  const source = foundationRequested ? 'foundation' as const : facts.draft.goal === 'half_marathon' ? 'half_marathon' as const : 'not_applicable' as const;
+  if (facts.draft.goal !== 'half_marathon' && !foundationRequested) return unavailable(['goal_not_half_marathon'], source);
+  if (!facts.assessment) return unavailable(['onboarding_or_assessment_missing'], source);
   const current = assessFitness(facts.draft);
-  if (facts.assessment.inputFingerprint !== current.inputFingerprint) return { kind: 'unavailable', reasonCodes: ['assessment_outdated'], missingEvidence: current.missing, assessmentReasons: current.reasons, researchOnly: true, productionEligible: false };
+  if (facts.assessment.inputFingerprint !== current.inputFingerprint) return unavailable(['assessment_outdated'], source, { missingEvidence: current.missing, assessmentReasons: current.reasons });
   if (foundationRequested) {
     const d = facts.draft;
-    const unavailable = (reason: string): CurrentExperimentalHalfMarathonPreview => ({ kind: 'unavailable', reasonCodes: [reason], researchOnly: true, productionEligible: false });
-    if (d.goal === 'habit') return unavailable('goal_policy_family_not_authored');
-    if (d.currentTrainingStatus === 'unknown') return unavailable('current_training_context_unknown');
-    if (!isDateOnly(d.planStartDate)) return unavailable('invalid_plan_start_date');
-    if (d.goalDateFixed && !isDateOnly(d.goalDate)) return unavailable('invalid_goal_date');
-    if (d.interruption === 'unknown') return unavailable('recent_interruption_required');
-    if (d.currentTrainingStatus === 'currently_training' && d.interruption !== 'none' && d.interruption !== 'health_related') return unavailable('conflicting_current_training_context');
-    return generateFoundationProgram({ context: d.currentTrainingStatus, currentWeeklyRunningSeconds: numberOrNull(d.weeklyMinutes) === null ? null : Number(d.weeklyMinutes) * 60, currentContinuousRunningSeconds: numberOrNull(d.comfortableRunMinutes) === null ? null : Number(d.comfortableRunMinutes) * 60, currentEvidenceConfirmed: true, comfortableWalkingConfirmed: true, demonstratedAfterBreak: d.foundationPostBreakConfirmed === true, requestedFrequency: d.foundationFrequency ?? null, healthConcern: d.healthConcern, healthRelatedInterruption: d.interruption === 'health_related' || d.interruptionReason === 'illness_or_injury' }, { ownerId: facts.ownerId, goalFamily: d.goal, startDate: nextMondayOnOrAfter(d.planStartDate), fixedGoalDate: d.goalDateFixed ? d.goalDate as `${number}-${number}-${number}` : null, availableDays: d.trainingDays.map(weekday => ({ weekday, maxMinutes: numberOrNull(d.minuteLimits[weekday] ?? ''), confirmedByRunner: d.minuteLimitConfirmedDays.includes(weekday) })), unavailableDates: d.unavailableDates.split(',').map(value => value.trim()).filter(isDateOnly), preferredLongRunDay: d.preferredLongDay });
+    if (d.goal === 'habit') return unavailable(['goal_policy_family_not_authored'], 'not_applicable');
+    if (d.currentTrainingStatus === 'unknown') return unavailable(['current_training_context_unknown'], 'foundation');
+    if (!isDateOnly(d.planStartDate)) return unavailable(['invalid_plan_start_date'], 'foundation');
+    if (d.goalDateFixed && !isDateOnly(d.goalDate)) return unavailable(['invalid_goal_date'], 'foundation');
+    if (d.interruption === 'unknown') return unavailable(['recent_interruption_required'], 'foundation');
+    if (d.currentTrainingStatus === 'currently_training' && d.interruption !== 'none' && d.interruption !== 'health_related') return unavailable(['conflicting_current_training_context'], 'foundation');
+    return { value: generateFoundationProgram({ context: d.currentTrainingStatus, currentWeeklyRunningSeconds: numberOrNull(d.weeklyMinutes) === null ? null : Number(d.weeklyMinutes) * 60, currentContinuousRunningSeconds: numberOrNull(d.comfortableRunMinutes) === null ? null : Number(d.comfortableRunMinutes) * 60, currentEvidenceConfirmed: true, comfortableWalkingConfirmed: true, demonstratedAfterBreak: d.foundationPostBreakConfirmed === true, requestedFrequency: d.foundationFrequency ?? null, healthConcern: d.healthConcern, healthRelatedInterruption: d.interruption === 'health_related' || d.interruptionReason === 'illness_or_injury' }, { ownerId: facts.ownerId, goalFamily: d.goal, startDate: nextMondayOnOrAfter(d.planStartDate), fixedGoalDate: d.goalDateFixed ? d.goalDate as `${number}-${number}-${number}` : null, availableDays: d.trainingDays.map(weekday => ({ weekday, maxMinutes: numberOrNull(d.minuteLimits[weekday] ?? ''), confirmedByRunner: d.minuteLimitConfirmedDays.includes(weekday) })), unavailableDates: d.unavailableDates.split(',').map(value => value.trim()).filter(isDateOnly), preferredLongRunDay: d.preferredLongDay }), previewContext, source: 'foundation' };
   }
-  if (current.code === 'insufficient_information') return { kind: 'unavailable', reasonCodes: ['assessment_insufficient_information'], missingEvidence: current.missing, assessmentReasons: current.reasons, researchOnly: true, productionEligible: false };
+  if (current.code === 'insufficient_information') return unavailable(['assessment_insufficient_information'], 'half_marathon', { missingEvidence: current.missing, assessmentReasons: current.reasons });
   const readiness = assessHalfMarathonReturnReadiness({
     currentTrainingStatus: facts.draft.currentTrainingStatus,
     lastRunningDate: isDateOnly(facts.draft.lastRunningDate) ? facts.draft.lastRunningDate : null,
@@ -40,11 +57,11 @@ export async function openCurrentExperimentalHalfMarathonPreview(evaluationDate?
     currentCapabilityConfirmedAt: isDateOnly(facts.draft.currentCapabilityConfirmedAt) ? facts.draft.currentCapabilityConfirmedAt : null,
     historical: { weeklyMinutes: numberOrNull(facts.draft.weeklyMinutes), longestSessionMinutes: numberOrNull(facts.draft.longestSessionMinutes), comfortableRunMinutes: numberOrNull(facts.draft.comfortableRunMinutes), weeklyObservationDate: isDateOnly(facts.draft.weeklyEvidenceConfirmedAt) ? facts.draft.weeklyEvidenceConfirmedAt : null, longestSessionDate: isDateOnly(facts.draft.longestSessionDate) ? facts.draft.longestSessionDate : null },
   });
-  if (readiness.state !== 'ready_for_supported_preparation') return { kind: 'unavailable', reasonCodes: readiness.reasonCodes, readiness, researchOnly: true, productionEligible: false };
+  if (readiness.state !== 'ready_for_supported_preparation') return unavailable(readiness.reasonCodes, 'half_marathon', { readiness });
   const planning = buildMultiDistancePlanningInput(facts.draft, facts.assessment);
-  if (planning.kind === 'blocked') return { kind: 'unavailable', reasonCodes: planning.reasonCodes, missingEvidence: facts.assessment.missing, assessmentReasons: facts.assessment.reasons, researchOnly: true, productionEligible: false };
-  if (planning.goalFamily !== 'half_marathon') return { kind: 'unavailable', reasonCodes: ['goal_not_half_marathon'], researchOnly: true, productionEligible: false };
-  return simulateHalfMarathonDraft({ ownerId: facts.ownerId, weeklyMinutes: planning.evidence.weeklyMinutes, longestSessionMinutes: planning.evidence.longestSessionMinutes, comfortableRunMinutes: planning.evidence.comfortableRunMinutes, weeklyEvidenceObservedAt: isDateOnly(facts.draft.weeklyEvidenceConfirmedAt) ? facts.draft.weeklyEvidenceConfirmedAt : null, longestSessionDate: isDateOnly(facts.draft.longestSessionDate) ? facts.draft.longestSessionDate : null, interruption: facts.draft.interruption, healthConcern: facts.draft.healthConcern, availableDays: planning.constraints.availableDays, unavailableDates: planning.constraints.unavailableDates, preferredLongRunDay: planning.constraints.preferredLongRunDay, startDate: planning.constraints.startDate, fixedGoalDate: planning.constraints.fixedGoalDate, asOfDate: (evaluationDate ?? localDateOnly()) as `${number}-${number}-${number}`, returnReadiness: readiness });
+  if (planning.kind === 'blocked') return unavailable(planning.reasonCodes, 'half_marathon', { missingEvidence: facts.assessment.missing, assessmentReasons: facts.assessment.reasons });
+  if (planning.goalFamily !== 'half_marathon') return unavailable(['goal_not_half_marathon'], 'not_applicable');
+  return { value: simulateHalfMarathonDraft({ ownerId: facts.ownerId, weeklyMinutes: planning.evidence.weeklyMinutes, longestSessionMinutes: planning.evidence.longestSessionMinutes, comfortableRunMinutes: planning.evidence.comfortableRunMinutes, weeklyEvidenceObservedAt: isDateOnly(facts.draft.weeklyEvidenceConfirmedAt) ? facts.draft.weeklyEvidenceConfirmedAt : null, longestSessionDate: isDateOnly(facts.draft.longestSessionDate) ? facts.draft.longestSessionDate : null, interruption: facts.draft.interruption, healthConcern: facts.draft.healthConcern, availableDays: planning.constraints.availableDays, unavailableDates: planning.constraints.unavailableDates, preferredLongRunDay: planning.constraints.preferredLongRunDay, startDate: planning.constraints.startDate, fixedGoalDate: planning.constraints.fixedGoalDate, asOfDate: (evaluationDate ?? localDateOnly()) as `${number}-${number}-${number}`, returnReadiness: readiness }), previewContext, source: 'half_marathon' };
 }
 
 function numberOrNull(value: string) { const parsed = Number(value); return Number.isFinite(parsed) && parsed > 0 ? parsed : null; }
