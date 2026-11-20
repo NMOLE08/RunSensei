@@ -8,19 +8,40 @@ import { emptyFitnessAssessmentDraft, normalizeFitnessAssessmentDraft, type Fitn
 import type { PlanSnapshot } from '@/domain/training/entities';
 import { loadRemoteOnboardingAnswers } from '@/services/account/onboardingProgress';
 import { requireActiveAccountId } from './localAccount';
+import type { CurrentBeginner5kPublication } from './currentBeginner5kPublication';
+import { runnerLocalDate } from '@/domain/planning/beginner5kRunnerEvidence';
 
 /** Reads only the active authenticated account's local planning facts. */
-export async function openPlanAvailability(): Promise<PlanAvailability> {
+export type CurrentPlanAvailability = PlanAvailability & {
+  previewContext: {
+    ownerId: string;
+    goal: FitnessAssessmentDraft['goal'] | null;
+    assessmentFingerprint: string | null;
+    evaluationDate: string | null;
+  };
+  beginner5kPublication?: CurrentBeginner5kPublication;
+};
+
+export async function openPlanAvailability(): Promise<CurrentPlanAvailability> {
   const facts = await loadCurrentAccountPlanFacts();
   const availability=evaluatePlanAvailability({ draft: facts.draft, assessment: facts.assessment, activeSnapshot: facts.activeSnapshot });
+  const previewContext = {
+    ownerId: facts.ownerId,
+    goal: facts.draft?.goal ?? null,
+    assessmentFingerprint: facts.draft ? assessmentEvidenceFingerprint(facts.draft) : null,
+    evaluationDate: facts.draft ? runnerLocalDate(new Date().toISOString(), facts.draft.timezone) : null,
+  };
   // Historical saved weeks remain readable without a release-service round trip.
   if(facts.draft?.goal==='5k'&&!facts.activeSnapshot) {
     const {getCurrentBeginner5kPublicationStatus}=await import('./currentBeginner5kPublication');
     const publication=await getCurrentBeginner5kPublicationStatus();
     if(await requireActiveAccountId()!==facts.ownerId)throw new Error('Account changed while reading plan status.');
-    return {...availability,consumerStatus:publication.status};
+    // A research preview and authorization are independent. Keep the candidate
+    // account-scoped here so an internal build can render it without treating it
+    // as an active plan or weakening the publication gate.
+    return {...availability,consumerStatus:publication.status,previewContext,beginner5kPublication:publication};
   }
-  return availability;
+  return {...availability,previewContext};
 }
 
 export type CurrentAccountPlanFacts = { ownerId: string; draft: FitnessAssessmentDraft | null; assessment: FitnessAssessmentResult | null; activeSnapshot: PlanSnapshot | null };

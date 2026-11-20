@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams, type Href } from 'expo-router';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Button, Card, PageHeader, Screen, SectionHeader } from '@/design/components';
 import { addCalendarDays } from '@/domain/calendar/operations';
@@ -10,11 +10,11 @@ import { SessionCard, StateCard } from '@/features/execution/components';
 import { usePlanAvailability } from '@/features/execution/usePlanAvailability';
 import { PlanAvailabilityCard } from '@/features/execution/PlanAvailabilityCard';
 import { experimental5kPreviewEnabled } from '@/config/experimental5kPreview';
-import { useExperimental5kPreview } from '@/features/execution/useExperimental5kPreview';
 import { Experimental5kPreviewCard } from '@/features/execution/Experimental5kPreviewCard';
 import { useExperimentalHalfMarathonPreview } from '@/features/execution/useExperimentalHalfMarathonPreview';
 import { ExperimentalHalfMarathonPreviewCard } from '@/features/execution/ExperimentalHalfMarathonPreviewCard';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { publishCurrentBeginner5kWeekOne } from '@/application/currentBeginner5kPublication';
 
 const asDate = (value: string) => value as `${number}-${number}-${number}`;
 
@@ -27,25 +27,44 @@ function AccountPlanScreen() {
   const selectedDate = date ?? localDateOnly();
   const { status, data, error, reload } = useActivePlan();
   const availability = usePlanAvailability();
-  const experimentalPreview = useExperimental5kPreview(experimental5kPreviewEnabled);
-  const experimentalHalfPreview = useExperimentalHalfMarathonPreview(experimental5kPreviewEnabled);
+  const previewContext = availability.data?.previewContext;
+  const previewIdentity = previewContext ? `${previewContext.ownerId}:${previewContext.goal ?? 'none'}:${previewContext.assessmentFingerprint ?? 'none'}` : 'loading';
+  const experimentalHalfPreview = useExperimentalHalfMarathonPreview(experimental5kPreviewEnabled, previewIdentity, previewContext?.evaluationDate ?? null);
   const reloadAvailability = availability.reload;
-  const reloadExperimentalPreview = experimentalPreview.reload;
   const reloadHalfPreview = experimentalHalfPreview.reload;
   const hasFocused = useRef(false);
+  const [publicationError, setPublicationError] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
   useFocusEffect(useCallback(() => {
     if (!hasFocused.current) { hasFocused.current = true; return; }
-    reloadAvailability();
-    if (experimental5kPreviewEnabled) { reloadExperimentalPreview(); reloadHalfPreview(); }
-  }, [reloadAvailability, reloadExperimentalPreview, reloadHalfPreview]));
+    void Promise.all([reload(), reloadAvailability(), ...(experimental5kPreviewEnabled ? [reloadHalfPreview()] : [])]);
+  }, [reload, reloadAvailability, reloadHalfPreview]));
+
+  const publishWeekOne = useCallback(async () => {
+    if (publishing) return;
+    setPublishing(true);
+    setPublicationError(null);
+    try {
+      const result = await publishCurrentBeginner5kWeekOne();
+      if (result.status.code !== 'plan_ready') throw new Error(result.status.message);
+      await Promise.all([reload(), reloadAvailability()]);
+    } catch (publishError) {
+      setPublicationError(publishError instanceof Error ? publishError.message : 'The plan could not be activated. Please try again.');
+      await Promise.all([reload(), reloadAvailability()]);
+    } finally { setPublishing(false); }
+  }, [publishing, reload, reloadAvailability]);
 
   if (availability.status === 'loading') return <Screen><AppText variant="meta">YOUR PLAN</AppText><StateCard title="Checking plan availability">Reviewing this account’s saved profile and plan status.</StateCard></Screen>;
   if (availability.status === 'unavailable') return <Screen><AppText variant="meta">YOUR PLAN</AppText><StateCard actionLabel="Try again" onAction={availability.reload} title="Plan status unavailable">{availability.error ?? 'Your plan availability could not be read while offline.'}</StateCard></Screen>;
   if (availability.data && availability.data.state !== 'active_approved') {
-    if (experimental5kPreviewEnabled && (experimentalPreview.status === 'loading' || experimentalHalfPreview.status === 'loading')) return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><StateCard title="Checking experimental preview">Comparing saved information with the bundled draft pathways. This cannot activate a plan.</StateCard></Screen>;
-    if (experimental5kPreviewEnabled && experimentalHalfPreview.status === 'ready' && experimentalHalfPreview.data && !(experimentalHalfPreview.data.kind === 'unavailable' && experimentalHalfPreview.data.reasonCodes.includes('goal_not_half_marathon'))) return <Screen><Button label="Saved research blocks" tone="secondary" onPress={() => router.push('/research-foundation' as Href)} /><ExperimentalHalfMarathonPreviewCard value={experimentalHalfPreview.data} onRegenerate={experimentalHalfPreview.reload} /></Screen>;
-    if (experimental5kPreviewEnabled && experimentalPreview.status === 'ready' && experimentalPreview.data) return <Screen><Experimental5kPreviewCard value={experimentalPreview.data} onRegenerate={experimentalPreview.reload} /></Screen>;
-    if (experimental5kPreviewEnabled && experimentalPreview.status === 'unavailable') return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><PlanAvailabilityCard value={availability.data} /><StateCard actionLabel="Try preview again" onAction={experimentalPreview.reload} title="Experimental preview unavailable">{experimentalPreview.error ?? 'The experimental preview could not be read. Your tracker remains available.'}</StateCard></Screen>;
+    const goal = availability.data.previewContext.goal;
+    const publication = availability.data.beginner5kPublication;
+    if (experimental5kPreviewEnabled && goal === '5k' && publication?.preview) return <Screen><Experimental5kPreviewCard value={publication.preview} onRegenerate={availability.reload} activationStatus={publication.status} canPublish={publication.canPublish} onPublish={publishWeekOne} publishing={publishing} publicationError={publicationError} /></Screen>;
+    const mayShowFoundation = experimentalHalfPreview.data?.kind === 'foundation_program' && goal !== 'habit' && goal !== null;
+    const mayShowHalfMarathon = goal === 'half_marathon' && experimentalHalfPreview.data?.kind !== 'unavailable';
+    if (experimental5kPreviewEnabled && (mayShowFoundation || mayShowHalfMarathon)) return <Screen>{mayShowFoundation && <Button label="Saved research blocks" tone="secondary" onPress={() => router.push('/research-foundation' as Href)} />}<ExperimentalHalfMarathonPreviewCard value={experimentalHalfPreview.data!} onRegenerate={experimentalHalfPreview.reload} /></Screen>;
+    if (experimental5kPreviewEnabled && goal === 'half_marathon' && experimentalHalfPreview.status === 'loading') return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><StateCard title="Checking research preview">Comparing saved information with the bundled draft pathways. This cannot activate a plan.</StateCard></Screen>;
+    if (experimental5kPreviewEnabled && goal === '5k' && !publication?.preview && publication) return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><PlanAvailabilityCard value={availability.data} /><StateCard actionLabel="Try again" onAction={availability.reload} title="Research preview unavailable">{publication.status.message}</StateCard></Screen>;
     return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><PlanAvailabilityCard value={availability.data} /></Screen>;
   }
   if (status === 'loading') return <Screen><AppText variant="meta">YOUR PLAN</AppText><StateCard title="Opening your calendar">Your saved training week is loading.</StateCard></Screen>;

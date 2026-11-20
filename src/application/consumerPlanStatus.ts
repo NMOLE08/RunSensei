@@ -14,7 +14,7 @@ const messages: Record<ConsumerPlanState, readonly [string, string, string]> = {
   schedule_conflict: ['Let’s adjust your training days', 'The available days do not fit this training schedule.', '/onboarding/availability?part=availability-days&returnTo=/plan'],
   health_review_required: ['Health review required', 'A reported concern requires review before training can proceed.', '/onboarding/running?part=running-interruption&returnTo=/plan'],
   program_not_supported: ['This plan is not available yet', 'There is not a supported pathway for this goal and profile.', '/plan'],
-  policy_approval_pending: ['Plan approval pending', 'This training content is still being reviewed and cannot be activated.', '/plan'],
+  policy_approval_pending: ['Plan activation unavailable', 'This plan cannot currently be activated because coaching authorization is unavailable. Your saved running information does not need to be repeated.', '/plan'],
 };
 export function consumerPlanStatus(input: ConsumerPlanStatusInput) {
   const code: ConsumerPlanState = input.kind === 'authorized_persisted_plan' ? 'plan_ready' : input.kind;

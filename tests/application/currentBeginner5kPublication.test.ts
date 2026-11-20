@@ -46,7 +46,9 @@ test('two authenticated concurrent actions persist one week',async()=>{
 });
 test('no supplied real trust means blocked and no action',async()=>{
   Object.assign(policyAuthorizationConfig,{endpoint:null,roots:[]});
-  expect(await publishCurrentBeginner5kWeekOne()).toMatchObject({status:{code:'policy_approval_pending',nextAction:{destination:'/plan'}},canPublish:false});
+  const result=await publishCurrentBeginner5kWeekOne();
+  expect(result).toMatchObject({status:{code:'policy_approval_pending',nextAction:{destination:'/plan'}},canPublish:false,preview:{kind:'preview'}});
+  expect(result.preview?.sessions).toHaveLength(36);
   expect(db.table('plans')).toHaveLength(0);
 });
 test('network loss or stored trust rollback fail closed instead of trusting cached non-revocation',async()=>{

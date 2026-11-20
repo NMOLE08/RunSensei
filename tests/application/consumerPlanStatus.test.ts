@@ -11,3 +11,10 @@ it('keeps every blocked consumer state distinct and non-active', () => {
     expect(consumerPlanStatus({ kind, reasonCodes: [kind] })).toMatchObject({ code: kind, activePlan: false });
   }
 });
+
+it('explains unavailable coaching authorization without claiming a human review is underway', () => {
+  const status = consumerPlanStatus({ kind: 'policy_approval_pending', reasonCodes: ['release_trust_not_configured'] });
+  expect(status).toMatchObject({ code: 'policy_approval_pending', title: 'Plan activation unavailable' });
+  expect(status.message).toContain('coaching authorization is unavailable');
+  expect(status.message).not.toContain('being reviewed');
+});
