@@ -1,17 +1,4 @@
-import { planPreviewIdentityKey, samePlanPreviewIdentity, type PlanPreviewIdentity } from '@/application/planPreviewIdentity';
-
-/**
- * The Plan screen receives fresh availability objects on every storage read.
- * Keep the first context for an equivalent identity so React dependencies stay
- * stable without dropping any input that makes a preview unsafe to reuse.
- */
-export function retainEquivalentPreviewContext(
-  previous: PlanPreviewIdentity | null,
-  incoming: PlanPreviewIdentity | null,
-): PlanPreviewIdentity | null {
-  if (previous && incoming && samePlanPreviewIdentity(previous, incoming)) return previous;
-  return incoming;
-}
+import { planPreviewIdentityKey, type PlanPreviewIdentity } from '@/application/planPreviewIdentity';
 
 export type PlanFocusRefreshState = Readonly<{ hasReceivedFocus: boolean }>;
 
@@ -44,4 +31,13 @@ export function shouldRequestPreviewForContext(
 
 export function shouldApplyPreviewRequest(currentRequestId: number, completedRequestId: number): boolean {
   return currentRequestId === completedRequestId;
+}
+
+export function selectedPreviewWeek(weeksByIdentity: Readonly<Record<string, number>>, identity: string, maximumWeek: number): number {
+  return Math.max(1, Math.min(maximumWeek, weeksByIdentity[identity] ?? 1));
+}
+
+export function saveSelectedPreviewWeek(weeksByIdentity: Readonly<Record<string, number>>, identity: string, week: number, maximumWeek: number): Record<string, number> {
+  const nextWeek = Math.max(1, Math.min(maximumWeek, week));
+  return weeksByIdentity[identity] === nextWeek ? weeksByIdentity : { ...weeksByIdentity, [identity]: nextWeek };
 }

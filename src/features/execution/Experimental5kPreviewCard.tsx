@@ -43,9 +43,9 @@ const reasonCopy: Record<string, string> = {
   longest_session_below_candidate_minimum: 'The continuous-running draft requires a longer recent session. Torto will not substitute a workload.',
 };
 
-export function Experimental5kPreviewCard({ value, onRegenerate, activationStatus, canPublish = false, onPublish, publishing = false, publicationError = null }: { value: CurrentExperimental5kPreview; onRegenerate: () => void; activationStatus?: CurrentBeginner5kPublication['status']; canPublish?: boolean; onPublish?: () => void; publishing?: boolean; publicationError?: string | null }) {
+export function Experimental5kPreviewCard({ value, selectedWeek, onSelectedWeekChange, onRegenerate, activationStatus, canPublish = false, onPublish, publishing = false, publicationError = null }: { value: CurrentExperimental5kPreview; selectedWeek?: number; onSelectedWeekChange?: (week: number) => void; onRegenerate: () => void; activationStatus?: CurrentBeginner5kPublication['status']; canPublish?: boolean; onPublish?: () => void; publishing?: boolean; publicationError?: string | null }) {
   if (value.kind !== 'preview') return <BlockedPreview value={value} onRegenerate={onRegenerate} />;
-  return <Preview value={value} onRegenerate={onRegenerate} activationStatus={activationStatus} canPublish={canPublish} onPublish={onPublish} publishing={publishing} publicationError={publicationError} />;
+  return <Preview value={value} selectedWeek={selectedWeek} onSelectedWeekChange={onSelectedWeekChange} onRegenerate={onRegenerate} activationStatus={activationStatus} canPublish={canPublish} onPublish={onPublish} publishing={publishing} publicationError={publicationError} />;
 }
 
 function BlockedPreview({ value, onRegenerate }: { value: Exclude<CurrentExperimental5kPreview, { kind: 'preview' }>; onRegenerate: () => void }) {
@@ -88,8 +88,10 @@ function requirementFor5kReason(reasons: readonly string[]): OnboardingRequireme
   return null;
 }
 
-function Preview({ value, onRegenerate, activationStatus, canPublish, onPublish, publishing, publicationError }: { value: Extract<CurrentExperimental5kPreview, { kind: 'preview' }>; onRegenerate: () => void; activationStatus?: CurrentBeginner5kPublication['status']; canPublish: boolean; onPublish?: () => void; publishing: boolean; publicationError: string | null }) {
-  const [week, setWeek] = useState(initialPreviewWeek); const [expanded, setExpanded] = useState<string | null>(null);
+function Preview({ value, selectedWeek, onSelectedWeekChange, onRegenerate, activationStatus, canPublish, onPublish, publishing, publicationError }: { value: Extract<CurrentExperimental5kPreview, { kind: 'preview' }>; selectedWeek?: number; onSelectedWeekChange?: (week: number) => void; onRegenerate: () => void; activationStatus?: CurrentBeginner5kPublication['status']; canPublish: boolean; onPublish?: () => void; publishing: boolean; publicationError: string | null }) {
+  const [uncontrolledWeek, setUncontrolledWeek] = useState(initialPreviewWeek); const [expanded, setExpanded] = useState<string | null>(null);
+  const week = Math.max(1, Math.min(12, selectedWeek ?? uncontrolledWeek));
+  const setWeek = (next: number) => onSelectedWeekChange ? onSelectedWeekChange(Math.max(1, Math.min(12, next))) : setUncontrolledWeek(Math.max(1, Math.min(12, next)));
   const previewKey = `${value.inputFingerprint}:${value.pathway.id}@${value.pathway.version}:${value.scheduleAnchor}:${value.sessions[0]?.date ?? ''}:${value.sessions.at(-1)?.date ?? ''}`;
   const previewKeyRef = useRef(previewKey);
   useEffect(() => {
@@ -112,7 +114,7 @@ function Preview({ value, onRegenerate, activationStatus, canPublish, onPublish,
       {__DEV__ && <Disclosure title="Technical details" summary="Developer-only preview information"><AppText variant="meta">STRICT GATE · {value.strictProductionGate.kind.replaceAll('_', ' ').toUpperCase()}</AppText><AppText variant="meta">POLICY · {value.pathway.id}@{value.pathway.version}</AppText></Disclosure>}
     </Card>
     <Card style={styles.weekCard}>
-      <View style={styles.weekHeader}><Pressable accessibilityRole="button" accessibilityLabel="Previous preview week" disabled={week === 1} onPress={() => setWeek((current) => movePreviewWeek(current, -1))} style={[styles.arrow, week === 1 && styles.disabled]}><AppText variant="title">‹</AppText></Pressable><View style={styles.weekHeading}><AppText variant="meta">{calendarMonthYear(weekDays)}</AppText><AppText variant="label">Week {week} of 12{recoveryWeek ? ' · Recovery week' : ''}</AppText></View><Pressable accessibilityRole="button" accessibilityLabel="Next preview week" disabled={week === 12} onPress={() => setWeek((current) => movePreviewWeek(current, 1))} style={[styles.arrow, week === 12 && styles.disabled]}><AppText variant="title">›</AppText></Pressable></View>
+      <View style={styles.weekHeader}><Pressable accessibilityRole="button" accessibilityLabel="Previous preview week" disabled={week === 1} onPress={() => setWeek(movePreviewWeek(week, -1))} style={[styles.arrow, week === 1 && styles.disabled]}><AppText variant="title">‹</AppText></Pressable><View style={styles.weekHeading}><AppText variant="meta">{calendarMonthYear(weekDays)}</AppText><AppText variant="label">Week {week} of 12{recoveryWeek ? ' · Recovery week' : ''}</AppText></View><Pressable accessibilityRole="button" accessibilityLabel="Next preview week" disabled={week === 12} onPress={() => setWeek(movePreviewWeek(week, 1))} style={[styles.arrow, week === 12 && styles.disabled]}><AppText variant="title">›</AppText></Pressable></View>
       <View accessibilityLabel={`Preview week ${week} calendar`} style={styles.dayStrip}>{weekDays.map((item) => <View key={item.date} style={[styles.day, item.session && styles.plannedDay]}><AppText variant="meta" style={item.session && styles.plannedText}>{days[item.day]}</AppText><AppText variant="label" style={item.session && styles.plannedText}>{item.date.slice(-2)}</AppText><AppText variant="meta" style={item.session && styles.plannedText}>{item.session ? shortWorkoutLabel(item.session) : 'REST'}</AppText></View>)}</View>
       {weekTotal > 0 && <View style={styles.weekFacts}><AppText variant="meta">{sessions.length} SESSIONS</AppText><AppText variant="meta">{formatSeconds(weekTotal)} SCHEDULED</AppText></View>}
       {recoveryWeek && <AppText style={styles.recovery}>Recovery week: this protected lower-load structure comes from the draft policy pack.</AppText>}

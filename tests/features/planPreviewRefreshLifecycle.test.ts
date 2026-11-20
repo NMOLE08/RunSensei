@@ -3,7 +3,8 @@ import { emptyFitnessAssessmentDraft } from '@/domain/assessment/types';
 import {
   initialPlanFocusRefreshState,
   nextPlanFocusRefresh,
-  retainEquivalentPreviewContext,
+  saveSelectedPreviewWeek,
+  selectedPreviewWeek,
   shouldApplyPreviewRequest,
   shouldRequestPreviewForContext,
 } from '@/features/execution/planPreviewRefreshLifecycle';
@@ -19,13 +20,11 @@ const context = (ownerId = 'account-a', changes: Record<string, unknown> = {}) =
 }, '2027-01-01T00:00:00.000Z', '2027-01-01');
 
 describe('Plan preview refresh lifecycle', () => {
-  it('retains an equivalent availability context and does not request the preview again', () => {
+  it('does not request a preview again for an equivalent newly allocated context', () => {
     const first = context();
     const equivalentNewObject = context();
-    const retained = retainEquivalentPreviewContext(first, equivalentNewObject);
 
-    expect(retained).toBe(first);
-    expect(shouldRequestPreviewForContext(planPreviewIdentityKey(first), true, retained)).toBe(false);
+    expect(shouldRequestPreviewForContext(planPreviewIdentityKey(first), true, equivalentNewObject)).toBe(false);
   });
 
   it('loads once for an initial context and remains settled while it is unchanged', () => {
@@ -61,5 +60,21 @@ describe('Plan preview refresh lifecycle', () => {
   it('rejects a delayed result after a newer preview request has started', () => {
     expect(shouldApplyPreviewRequest(2, 1)).toBe(false);
     expect(shouldApplyPreviewRequest(2, 2)).toBe(true);
+  });
+
+  it('preserves a selected week for an equivalent preview identity after remount', () => {
+    const identity = planPreviewIdentityKey(context());
+    const selected = saveSelectedPreviewWeek({}, identity, 3, 12);
+
+    expect(selectedPreviewWeek(selected, identity, 12)).toBe(3);
+  });
+
+  it('starts a different preview identity at week one and clamps invalid saved weeks', () => {
+    const firstIdentity = planPreviewIdentityKey(context());
+    const changedIdentity = planPreviewIdentityKey(context('account-a', { goal: '10k' }));
+    const selected = saveSelectedPreviewWeek({}, firstIdentity, 12, 12);
+
+    expect(selectedPreviewWeek(selected, changedIdentity, 10)).toBe(1);
+    expect(selectedPreviewWeek(selected, firstIdentity, 10)).toBe(10);
   });
 });
