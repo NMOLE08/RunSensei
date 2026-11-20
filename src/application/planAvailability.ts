@@ -9,33 +9,33 @@ import type { PlanSnapshot } from '@/domain/training/entities';
 import { loadRemoteOnboardingAnswers } from '@/services/account/onboardingProgress';
 import { requireActiveAccountId } from './localAccount';
 import type { CurrentBeginner5kPublication } from './currentBeginner5kPublication';
-import { runnerLocalDate } from '@/domain/planning/beginner5kRunnerEvidence';
+import { previewIdentityFor, samePlanPreviewIdentity, type PlanPreviewIdentity } from './planPreviewIdentity';
 
 /** Reads only the active authenticated account's local planning facts. */
 export type CurrentPlanAvailability = PlanAvailability & {
-  previewContext: {
-    ownerId: string;
-    goal: FitnessAssessmentDraft['goal'] | null;
-    assessmentFingerprint: string | null;
-    evaluationDate: string | null;
-  };
+  previewContext: PlanPreviewIdentity;
   beginner5kPublication?: CurrentBeginner5kPublication;
 };
 
 export async function openPlanAvailability(): Promise<CurrentPlanAvailability> {
   const facts = await loadCurrentAccountPlanFacts();
   const availability=evaluatePlanAvailability({ draft: facts.draft, assessment: facts.assessment, activeSnapshot: facts.activeSnapshot });
-  const previewContext = {
-    ownerId: facts.ownerId,
-    goal: facts.draft?.goal ?? null,
-    assessmentFingerprint: facts.draft ? assessmentEvidenceFingerprint(facts.draft) : null,
-    evaluationDate: facts.draft ? runnerLocalDate(new Date().toISOString(), facts.draft.timezone) : null,
-  };
+  const previewContext = previewIdentityFor(facts.ownerId, facts.draft);
   // Historical saved weeks remain readable without a release-service round trip.
   if(facts.draft?.goal==='5k'&&!facts.activeSnapshot) {
     const {getCurrentBeginner5kPublicationStatus}=await import('./currentBeginner5kPublication');
     const publication=await getCurrentBeginner5kPublicationStatus();
     if(await requireActiveAccountId()!==facts.ownerId)throw new Error('Account changed while reading plan status.');
+    // The publication service reads durable facts independently to preserve its
+    // authorization boundary. Re-read once before combining its result so a
+    // goal or evidence edit cannot pair an old availability with a new draft.
+    const currentFacts = await loadCurrentAccountPlanFacts();
+    const currentContext = previewIdentityFor(currentFacts.ownerId, currentFacts.draft);
+    if (!samePlanPreviewIdentity(previewContext, currentContext)
+      || !publication.previewContext
+      || !samePlanPreviewIdentity(previewContext, publication.previewContext)) {
+      throw new Error('Plan information changed while reading the research preview. Please try again.');
+    }
     // A research preview and authorization are independent. Keep the candidate
     // account-scoped here so an internal build can render it without treating it
     // as an active plan or weakening the publication gate.

@@ -105,7 +105,7 @@ function Preview({ value, onRegenerate, activationStatus, canPublish, onPublish,
   const weekTotal = sessions.reduce((total, session) => total + (session.durationSeconds ?? 0), 0);
   return <>
     <Card style={styles.experimentalCard}>
-      <View style={styles.heroTop}><View style={styles.heroCopy}><AppText variant="meta">BEGINNER 5K · RUN / WALK</AppText><AppText variant="title">Your training plan</AppText><AppText style={styles.heroDescription}>Three authored sessions each week, paced by effort—not pace targets.</AppText></View><View style={styles.heroWeek}><AppText variant="label">12</AppText><AppText variant="meta">WEEKS</AppText></View></View>
+      <View style={styles.heroTop}><View style={styles.heroCopy}><AppText variant="meta">{previewPathwayLabel(value.pathway.id)}</AppText><AppText variant="title">Your training plan</AppText><AppText style={styles.heroDescription}>Internal research preview only. Three authored sessions each week, paced by effort—not pace targets.</AppText></View><View style={styles.heroWeek}><AppText variant="label">12</AppText><AppText variant="meta">WEEKS</AppText></View></View>
       <View style={styles.statusLine}><View style={styles.previewDot} /><AppText style={styles.warning}>{previewStatus.message}</AppText></View>
       {activationStatus && activationStatus.code !== 'preview_available' && <View style={styles.activationStatus}><AppText variant="meta">ACTIVATION STATUS</AppText><AppText variant="label">{activationStatus.title}</AppText><AppText style={styles.warning}>{activationStatus.message}</AppText></View>}
       <AppText variant="meta">TRAINING DAYS · {value.feasibility.selectedWeekdays.map((day) => days[day]).join(' · ')}</AppText>
@@ -138,6 +138,11 @@ export function movePreviewWeek(current: number, direction: -1 | 1) { return Mat
 export function calendarMonthYear(daysInWeek: readonly { date: string }[]) { const first = daysInWeek[0]?.date; return first ? new Date(`${first}T12:00:00`).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : 'Training week'; }
 export function previewWorkoutName(session: First5kDraftSession | undefined) { if (!session) return 'Workout'; if (session.distanceMeters === 5000) return '5K event'; const hasRun = session.steps.some((step) => step.kind === 'run'); const hasWalk = session.steps.some((step) => step.kind === 'walk'); return hasRun && hasWalk ? 'Run/walk workout' : hasRun ? 'Easy run' : 'Workout'; }
 export function shortWorkoutLabel(session: First5kDraftSession) { const name = previewWorkoutName(session); return name === 'Run/walk workout' ? 'R/W' : name === 'Easy run' ? 'RUN' : name === '5K event' ? '5K' : 'WORK'; }
+export function previewPathwayLabel(pathwayId: string) {
+  if (pathwayId === 'continuous_running_beginner_fixed_12_week') return 'BEGINNER 5K · CONTINUOUS RUNNING';
+  if (pathwayId === 'true_beginner_fixed_12_week_run_walk') return 'BEGINNER 5K · RUN / WALK';
+  return 'BEGINNER 5K · RESEARCH PREVIEW';
+}
 function accentBorder(accent: ReturnType<typeof presentPreviewWorkout>['accent']): ViewStyle { return ({ moss: { borderColor: colors.moss }, coral: { borderColor: colors.coral }, butter: { borderColor: colors.butter }, lavender: { borderColor: '#9877B8' }, event: { borderColor: colors.ink } })[accent]; }
 function friendlyConflict(conflict: { code: string; week: number | null; workout: string | null; date: string | null; weekday: number | null; requiredMinutes: number | null; availableMinutes: number | null; details: string }) { if (conflict.code === 'session_exceeds_time_limit') return `${conflict.date ? `${days[conflict.weekday ?? 0]} ${conflict.date}: ` : ''}the full authored session needs ${conflict.requiredMinutes} minutes, but the confirmed limit is ${conflict.availableMinutes} minutes.`; if (conflict.code === 'unconfirmed_time_limit') return `${conflict.date ? `${days[conflict.weekday ?? 0]} ${conflict.date}: ` : ''}the saved ${conflict.availableMinutes ?? 'unknown'}-minute value has not been confirmed as the runner’s actual availability.`; return conflict.details; }
 

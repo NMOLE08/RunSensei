@@ -15,6 +15,8 @@ import { useExperimentalHalfMarathonPreview } from '@/features/execution/useExpe
 import { ExperimentalHalfMarathonPreviewCard } from '@/features/execution/ExperimentalHalfMarathonPreviewCard';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { publishCurrentBeginner5kWeekOne } from '@/application/currentBeginner5kPublication';
+import { planPreviewIdentityKey } from '@/application/planPreviewIdentity';
+import { selectResearchPreview } from '@/features/execution/planResearchPreviewSelection';
 
 const asDate = (value: string) => value as `${number}-${number}-${number}`;
 
@@ -28,20 +30,22 @@ function AccountPlanScreen() {
   const { status, data, error, reload } = useActivePlan();
   const availability = usePlanAvailability();
   const previewContext = availability.data?.previewContext;
-  const previewIdentity = previewContext ? `${previewContext.ownerId}:${previewContext.goal ?? 'none'}:${previewContext.assessmentFingerprint ?? 'none'}` : 'loading';
+  const previewIdentity = previewContext ? planPreviewIdentityKey(previewContext) : 'loading';
   const experimentalHalfPreview = useExperimentalHalfMarathonPreview(experimental5kPreviewEnabled, previewIdentity, previewContext?.evaluationDate ?? null);
   const reloadAvailability = availability.reload;
   const reloadHalfPreview = experimentalHalfPreview.reload;
   const hasFocused = useRef(false);
   const [publicationError, setPublicationError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const publicationInFlight = useRef(false);
   useFocusEffect(useCallback(() => {
     if (!hasFocused.current) { hasFocused.current = true; return; }
     void Promise.all([reload(), reloadAvailability(), ...(experimental5kPreviewEnabled ? [reloadHalfPreview()] : [])]);
   }, [reload, reloadAvailability, reloadHalfPreview]));
 
   const publishWeekOne = useCallback(async () => {
-    if (publishing) return;
+    if (publicationInFlight.current) return;
+    publicationInFlight.current = true;
     setPublishing(true);
     setPublicationError(null);
     try {
@@ -51,8 +55,11 @@ function AccountPlanScreen() {
     } catch (publishError) {
       setPublicationError(publishError instanceof Error ? publishError.message : 'The plan could not be activated. Please try again.');
       await Promise.all([reload(), reloadAvailability()]);
-    } finally { setPublishing(false); }
-  }, [publishing, reload, reloadAvailability]);
+    } finally {
+      publicationInFlight.current = false;
+      setPublishing(false);
+    }
+  }, [reload, reloadAvailability]);
 
   if (availability.status === 'loading') return <Screen><AppText variant="meta">YOUR PLAN</AppText><StateCard title="Checking plan availability">Reviewing this account’s saved profile and plan status.</StateCard></Screen>;
   if (availability.status === 'unavailable') return <Screen><AppText variant="meta">YOUR PLAN</AppText><StateCard actionLabel="Try again" onAction={availability.reload} title="Plan status unavailable">{availability.error ?? 'Your plan availability could not be read while offline.'}</StateCard></Screen>;
@@ -60,10 +67,10 @@ function AccountPlanScreen() {
     const goal = availability.data.previewContext.goal;
     const publication = availability.data.beginner5kPublication;
     if (experimental5kPreviewEnabled && goal === '5k' && publication?.preview) return <Screen><Experimental5kPreviewCard value={publication.preview} onRegenerate={availability.reload} activationStatus={publication.status} canPublish={publication.canPublish} onPublish={publishWeekOne} publishing={publishing} publicationError={publicationError} /></Screen>;
-    const mayShowFoundation = experimentalHalfPreview.data?.kind === 'foundation_program' && goal !== 'habit' && goal !== null;
-    const mayShowHalfMarathon = goal === 'half_marathon' && experimentalHalfPreview.data?.kind !== 'unavailable';
-    if (experimental5kPreviewEnabled && (mayShowFoundation || mayShowHalfMarathon)) return <Screen>{mayShowFoundation && <Button label="Saved research blocks" tone="secondary" onPress={() => router.push('/research-foundation' as Href)} />}<ExperimentalHalfMarathonPreviewCard value={experimentalHalfPreview.data!} onRegenerate={experimentalHalfPreview.reload} /></Screen>;
-    if (experimental5kPreviewEnabled && goal === 'half_marathon' && experimentalHalfPreview.status === 'loading') return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><StateCard title="Checking research preview">Comparing saved information with the bundled draft pathways. This cannot activate a plan.</StateCard></Screen>;
+    const researchPreview = selectResearchPreview(experimental5kPreviewEnabled, goal, previewIdentity, experimentalHalfPreview);
+    if (researchPreview.kind === 'preview') return <Screen>{researchPreview.foundation && researchPreview.value.kind === 'foundation_program' && <Button label="Saved research blocks" tone="secondary" onPress={() => router.push('/research-foundation' as Href)} />}<ExperimentalHalfMarathonPreviewCard value={researchPreview.value} onRegenerate={experimentalHalfPreview.reload} /></Screen>;
+    if (researchPreview.kind === 'loading') return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><StateCard title="Checking research preview">Comparing saved information with the bundled draft pathways. This cannot activate a plan.</StateCard></Screen>;
+    if (researchPreview.kind === 'error') return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><StateCard actionLabel="Try again" onAction={experimentalHalfPreview.reload} title="Research preview unavailable">{researchPreview.message}</StateCard></Screen>;
     if (experimental5kPreviewEnabled && goal === '5k' && !publication?.preview && publication) return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><PlanAvailabilityCard value={availability.data} /><StateCard actionLabel="Try again" onAction={availability.reload} title="Research preview unavailable">{publication.status.message}</StateCard></Screen>;
     return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><PlanAvailabilityCard value={availability.data} /></Screen>;
   }

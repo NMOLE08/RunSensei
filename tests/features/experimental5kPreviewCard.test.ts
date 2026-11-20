@@ -1,4 +1,4 @@
-import { calendarMonthYear, initialPreviewWeek, movePreviewWeek, previewWorkoutName, shortWorkoutLabel } from '@/features/execution/Experimental5kPreviewCard';
+import { calendarMonthYear, initialPreviewWeek, movePreviewWeek, previewPathwayLabel, previewWorkoutName, shortWorkoutLabel } from '@/features/execution/Experimental5kPreviewCard';
 import { simulateFirst5kDraft } from '@/domain/planning/first5kPolicyPack';
 
 describe('5K preview presentation', () => {
@@ -6,6 +6,11 @@ describe('5K preview presentation', () => {
   if (simulation.kind !== 'draft_simulation') throw new Error('Expected the bundled preview fixture');
   const runWalk = simulation.sessions[0]!;
   const event = simulation.sessions.find((session) => session.distanceMeters === 5000)!;
+
+  it('uses the authored pathway identity in its visible research label', () => {
+    expect(previewPathwayLabel('true_beginner_fixed_12_week_run_walk')).toBe('BEGINNER 5K · RUN / WALK');
+    expect(previewPathwayLabel('continuous_running_beginner_fixed_12_week')).toBe('BEGINNER 5K · CONTINUOUS RUNNING');
+  });
 
   it('opens a newly mounted preview at week 1 and bounds week navigation', () => {
     expect(initialPreviewWeek()).toBe(1);

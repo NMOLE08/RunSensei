@@ -15,10 +15,11 @@ import { publishBeginner5kInitialWeek } from './beginner5kPublication';
 import { consumerPlanStatus, type ConsumerPlanState } from './consumerPlanStatus';
 import type { PlanSnapshot } from '@/domain/training/entities';
 import { isDateOnly } from '@/domain/calendar/dateOnly';
+import { previewIdentityFor, type PlanPreviewIdentity } from './planPreviewIdentity';
 
 export type CurrentBeginner5kPublication = {
   status: ReturnType<typeof consumerPlanStatus>; canPublish: boolean;
-  preview?: Experimental5kPreview; snapshot?: PlanSnapshot;
+  preview?: Experimental5kPreview; snapshot?: PlanSnapshot; previewContext?: PlanPreviewIdentity;
 };
 const recoveryFields:Record<string,{field:string;destination:string}>={
   missing_health_concern:{field:'healthConcern',destination:'/onboarding/running?part=running-interruption&focus=health-concern&returnTo=/plan'},
@@ -54,11 +55,13 @@ export const publishCurrentBeginner5kWeekOne = () => run(true);
 async function run(publish:boolean):Promise<CurrentBeginner5kPublication> {
   let lease:Awaited<ReturnType<typeof acquirePublicationAccount>>|undefined;
   let preview:Experimental5kPreview|undefined;
-  const blocked=(codes:readonly string[],fallback?:ConsumerPlanState):CurrentBeginner5kPublication=>({status:publicationBlockedStatus(codes,fallback),canPublish:false,preview});
+  let previewContext: PlanPreviewIdentity | undefined;
+  const blocked=(codes:readonly string[],fallback?:ConsumerPlanState):CurrentBeginner5kPublication=>({status:publicationBlockedStatus(codes,fallback),canPublish:false,preview,previewContext});
   try {
     lease=await acquirePublicationAccount();
     const facts=await loadCurrentAccountPlanFacts();await lease.assertCurrent();
     if(facts.ownerId!==lease.ownerId||facts.draft&&facts.draft.ownerId!==lease.ownerId) return blocked(['publication_account_changed']);
+    previewContext = previewIdentityFor(facts.ownerId, facts.draft);
     if(!facts.draft) return blocked(['onboarding_not_started']);
     const draft=facts.draft;const now=new Date().toISOString();const today=runnerLocalDate(now,draft.timezone);
     if(!today) return blocked(['invalid_evidence_timezone_or_evaluation_date']);
@@ -78,9 +81,9 @@ async function run(publish:boolean):Promise<CurrentBeginner5kPublication> {
       const saved=facts.activeSnapshot;
       const provenance=JSON.parse(saved.revision.explanationJson);
       if(saved.plan.templateId!==`torto.publication.${preview.pathway.id}@${preview.pathway.version}`||saved.plan.validationFingerprint!==preview.inputFingerprint||provenance.authorizationEvidence?.digest!==release.release.digestIdentity||provenance.testOnly===true||saved.assignments.length!==3||saved.plan.recommendationState!=='active')return blocked(['publication_revision_conflict']);
-      return {status:consumerPlanStatus({kind:'authorized_persisted_plan',planId:saved.plan.id,policyReference:saved.plan.templateId,authorizationVerified:true}),canPublish:false,snapshot:saved};
+      return {status:consumerPlanStatus({kind:'authorized_persisted_plan',planId:saved.plan.id,policyReference:saved.plan.templateId,authorizationVerified:true}),canPublish:false,snapshot:saved,previewContext};
     }
-    if(!publish) return {status:consumerPlanStatus({kind:'preview_available',reasonCodes:['verified_week_one_publication_available']}),canPublish:true,preview};
+    if(!publish) return {status:consumerPlanStatus({kind:'preview_available',reasonCodes:['verified_week_one_publication_available']}),canPublish:true,preview,previewContext};
     const database=await openAppDatabase();
     const fingerprint=assessmentEvidenceFingerprint(draft);const owner=lease.ownerId;const activeLease=lease;
     const assertPublicationCurrent=async()=>{
@@ -98,7 +101,7 @@ async function run(publish:boolean):Promise<CurrentBeginner5kPublication> {
       availability:{id:`account-availability:${owner}`,profileId,weekdayLimitsJson:JSON.stringify(draft.minuteLimits),preferredLongRunDay:draft.preferredLongDay,exceptionsJson:JSON.stringify(draft.unavailableDates.split(',').filter(Boolean)),version:1,createdAt:now},
     },{now:()=>new Date().toISOString(),id:prefix=>`${prefix}:${owner}`,releaseTrust:trust.context,assertPublicationCurrent},trust.context.approvals);
     await lease.assertCurrent();
-    if(result.kind==='published')return {status:consumerPlanStatus({kind:'authorized_persisted_plan',planId:result.snapshot.plan.id,policyReference:result.snapshot.plan.templateId,authorizationVerified:true}),canPublish:false,snapshot:result.snapshot};
+    if(result.kind==='published')return {status:consumerPlanStatus({kind:'authorized_persisted_plan',planId:result.snapshot.plan.id,policyReference:result.snapshot.plan.templateId,authorizationVerified:true}),canPublish:false,snapshot:result.snapshot,previewContext};
     if(result.kind==='policy_approval_pending')return blocked(result.blockers.map(b=>b.code),'policy_approval_pending');
     return blocked(result.reasonCodes,result.kind==='persistence_error'?'plan_persistence_failure':'production_authorization_failure');
   } catch(error) {
