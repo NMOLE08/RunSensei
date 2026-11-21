@@ -18,6 +18,7 @@ import { publishCurrentBeginner5kWeekOne } from '@/application/currentBeginner5k
 import { planPreviewIdentityKey } from '@/application/planPreviewIdentity';
 import { selectResearchPreview } from '@/features/execution/planResearchPreviewSelection';
 import { initialPlanFocusRefreshState, nextPlanFocusRefresh, saveSelectedPreviewWeek, selectedPreviewWeek } from '@/features/execution/planPreviewRefreshLifecycle';
+import { programmeSelectionIdentity } from '@/features/execution/researchPlanPresentation';
 
 const asDate = (value: string) => value as `${number}-${number}-${number}`;
 
@@ -39,9 +40,9 @@ function AccountPlanScreen() {
   const [publicationError, setPublicationError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const publicationInFlight = useRef(false);
-  const selectPreviewWeek = useCallback((maximumWeek: number, week: number) => {
-    setPreviewWeeks((current) => saveSelectedPreviewWeek(current, previewIdentity, week, maximumWeek));
-  }, [previewIdentity]);
+  const selectPreviewWeek = useCallback((identity: string, maximumWeek: number, week: number) => {
+    setPreviewWeeks((current) => saveSelectedPreviewWeek(current, identity, week, maximumWeek));
+  }, []);
   useFocusEffect(useCallback(() => {
     const decision = nextPlanFocusRefresh(focusRefreshState.current);
     focusRefreshState.current = decision.state;
@@ -73,9 +74,22 @@ function AccountPlanScreen() {
   if (availability.data && availability.data.state !== 'active_approved') {
     const goal = availability.data.previewContext.goal;
     const publication = availability.data.beginner5kPublication;
-    if (experimental5kPreviewEnabled && goal === '5k' && publication?.preview) return <Screen><Experimental5kPreviewCard value={publication.preview} selectedWeek={selectedPreviewWeek(previewWeeks, previewIdentity, 12)} onSelectedWeekChange={(week) => selectPreviewWeek(12, week)} onRegenerate={availability.reload} activationStatus={publication.status} canPublish={publication.canPublish} onPublish={publishWeekOne} publishing={publishing} publicationError={publicationError} /></Screen>;
+    if (experimental5kPreviewEnabled && goal === '5k' && publication?.preview) {
+      const preview = publication.preview;
+      const programmeIdentity = programmeSelectionIdentity(previewIdentity, { kind: 'beginner_5k', policyReference: `${preview.pathway.id}@${preview.pathway.version}`, id: `${preview.scheduleAnchor}:${preview.sessions[0]?.date ?? ''}:${preview.sessions.at(-1)?.date ?? ''}` });
+      return <Screen><Experimental5kPreviewCard value={preview} selectedWeek={selectedPreviewWeek(previewWeeks, programmeIdentity, 12)} onSelectedWeekChange={(week) => selectPreviewWeek(programmeIdentity, 12, week)} onRegenerate={availability.reload} activationStatus={publication.status} canPublish={publication.canPublish} onPublish={publishWeekOne} publishing={publishing} publicationError={publicationError} /></Screen>;
+    }
     const researchPreview = selectResearchPreview(experimental5kPreviewEnabled, goal, previewIdentity, experimentalHalfPreview);
-    if (researchPreview.kind === 'preview') return <Screen>{researchPreview.foundation && researchPreview.value.kind === 'foundation_program' && <Button label="Saved research blocks" tone="secondary" onPress={() => router.push('/research-foundation' as Href)} />}<ExperimentalHalfMarathonPreviewCard value={researchPreview.value} selectedWeek={selectedPreviewWeek(previewWeeks, previewIdentity, 10)} onSelectedWeekChange={(week, maximumWeek) => selectPreviewWeek(maximumWeek, week)} foundation={researchPreview.foundation} onRegenerate={experimentalHalfPreview.reload} /></Screen>;
+    if (researchPreview.kind === 'preview') {
+      const preview = researchPreview.value;
+      const programmeIdentity = programmeSelectionIdentity(previewIdentity, preview.kind === 'foundation_program'
+        ? { kind: 'foundation', policyReference: preview.policyReference, id: `${preview.workouts[0]?.date ?? ''}:${preview.workouts.at(-1)?.date ?? ''}` }
+        : preview.kind === 'simulation'
+          ? { kind: 'half_marathon', policyReference: `${preview.policy.id}@${preview.policy.version}`, id: `${preview.weeks[0]?.workouts[0]?.date ?? ''}:${preview.weeks.at(-1)?.workouts.at(-1)?.date ?? ''}` }
+          : { kind: 'foundation', policyReference: 'blocked', id: preview.reasonCodes.join(':') });
+      const maximumWeek = preview.kind === 'foundation_program' ? preview.weeks.length : preview.kind === 'simulation' ? preview.weeks.length : 1;
+      return <Screen>{researchPreview.foundation && preview.kind === 'foundation_program' && <Button label="Saved research blocks" tone="secondary" onPress={() => router.push('/research-foundation' as Href)} />}<ExperimentalHalfMarathonPreviewCard value={preview} selectedWeek={selectedPreviewWeek(previewWeeks, programmeIdentity, maximumWeek)} onSelectedWeekChange={(week, max) => selectPreviewWeek(programmeIdentity, max, week)} foundation={researchPreview.foundation} onRegenerate={experimentalHalfPreview.reload} /></Screen>;
+    }
     if (researchPreview.kind === 'loading') return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><StateCard title="Checking research preview">Comparing saved information with the bundled draft pathways. This cannot activate a plan.</StateCard></Screen>;
     if (researchPreview.kind === 'error') return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><StateCard actionLabel="Try again" onAction={experimentalHalfPreview.reload} title="Research preview unavailable">{researchPreview.message}</StateCard></Screen>;
     if (experimental5kPreviewEnabled && goal === '5k' && !publication?.preview && publication) return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><PlanAvailabilityCard value={availability.data} /><StateCard actionLabel="Try again" onAction={availability.reload} title="Research preview unavailable">{publication.status.message}</StateCard></Screen>;

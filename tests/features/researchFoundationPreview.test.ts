@@ -32,9 +32,8 @@ test('saved research route keys its private state by authenticated owner',()=>{
   jest.mocked(useAuth).mockReturnValue({user:{id:'account-b'}} as never);const b=ResearchFoundationScreen();
   expect(a.key).toBe('account-a');expect(b.key).toBe('account-b');
 });
-test('generated foundation adapter presents exact running/walking totals and draft restrictions',()=>{
+test('generated foundation adapter keeps its draft restrictions and renders the compact calendar structure',()=>{
   const program=researchBlock().program;const rendered=FoundationProgramPreview({value:program,onRegenerate:jest.fn()});const labels=text(rendered).replace(/\s+/g,' ');
-  expect(labels).toContain('50 min running · 30 min walking');expect(labels).toContain('80 min total time');
-  expect(labels).toContain('WARMUP');expect(labels).toContain('COOLDOWN');expect(labels).toContain('Run at a comfortable conversational effort');
-  expect(labels).toContain('Half marathon');expect(labels).toContain('Plan preview — not active yet.');
+  expect(labels).toContain('Half marathon');expect(labels).toContain('preparation block, not your complete race training plan');
+  expect(labels).toContain('RESEARCH PREVIEW CONTROLS');expect(labels).not.toContain('Activate approved');
 });

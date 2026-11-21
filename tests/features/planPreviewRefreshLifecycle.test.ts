@@ -77,4 +77,12 @@ describe('Plan preview refresh lifecycle', () => {
     expect(selectedPreviewWeek(selected, changedIdentity, 10)).toBe(1);
     expect(selectedPreviewWeek(selected, firstIdentity, 10)).toBe(10);
   });
+
+  it('bounds screen-local selections while retaining the newest programme week', () => {
+    let selected: Record<string, number> = {};
+    for (let index = 0; index < 14; index += 1) selected = saveSelectedPreviewWeek(selected, `programme-${index}`, 3, 12);
+    expect(Object.keys(selected)).toHaveLength(12);
+    expect(selectedPreviewWeek(selected, 'programme-13', 12)).toBe(3);
+    expect(selectedPreviewWeek(selected, 'programme-0', 12)).toBe(1);
+  });
 });

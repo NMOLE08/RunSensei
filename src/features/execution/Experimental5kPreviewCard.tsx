@@ -10,6 +10,8 @@ import { consumerPlanStatus } from '@/application/consumerPlanStatus';
 import type { CurrentBeginner5kPublication } from '@/application/currentBeginner5kPublication';
 import { formatSeconds, presentPreviewTimeline, presentPreviewWorkout } from './workoutPresentation';
 import { WorkoutStepTimeline } from './WorkoutStepTimeline';
+import { PlanSummaryCard, PlanWeekCalendar, PlanWorkoutSummaryCard } from './ResearchPlanComponents';
+import { presentBeginner5kPlan } from './researchPlanPresentation';
 
 const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 const reasonCopy: Record<string, string> = {
@@ -90,6 +92,7 @@ function requirementFor5kReason(reasons: readonly string[]): OnboardingRequireme
 
 function Preview({ value, selectedWeek, onSelectedWeekChange, onRegenerate, activationStatus, canPublish, onPublish, publishing, publicationError }: { value: Extract<CurrentExperimental5kPreview, { kind: 'preview' }>; selectedWeek?: number; onSelectedWeekChange?: (week: number) => void; onRegenerate: () => void; activationStatus?: CurrentBeginner5kPublication['status']; canPublish: boolean; onPublish?: () => void; publishing: boolean; publicationError: string | null }) {
   const [uncontrolledWeek, setUncontrolledWeek] = useState(initialPreviewWeek); const [expanded, setExpanded] = useState<string | null>(null);
+  const plan = useMemo(() => presentBeginner5kPlan(value), [value]);
   const week = Math.max(1, Math.min(12, selectedWeek ?? uncontrolledWeek));
   const setWeek = (next: number) => onSelectedWeekChange ? onSelectedWeekChange(Math.max(1, Math.min(12, next))) : setUncontrolledWeek(Math.max(1, Math.min(12, next)));
   const previewKey = `${value.inputFingerprint}:${value.pathway.id}@${value.pathway.version}:${value.scheduleAnchor}:${value.sessions[0]?.date ?? ''}:${value.sessions.at(-1)?.date ?? ''}`;
@@ -101,11 +104,11 @@ function Preview({ value, selectedWeek, onSelectedWeekChange, onRegenerate, acti
     setExpanded(null);
   }, [previewKey]);
   const sessions = value.sessions.filter((session) => session.week === week);
-  const weekDays = useMemo(() => weekCalendar(sessions), [sessions]);
   const recoveryWeek = week === 4 || week === 8;
   const previewStatus = consumerPlanStatus({ kind: 'preview_available', reasonCodes: [] });
   const weekTotal = sessions.reduce((total, session) => total + (session.durationSeconds ?? 0), 0);
   return <>
+    <PlanSummaryCard plan={plan} status="Research preview — activation remains unavailable until the required authorization is configured." />
     <Card style={styles.experimentalCard}>
       <View style={styles.heroTop}><View style={styles.heroCopy}><AppText variant="meta">{previewPathwayLabel(value.pathway.id)}</AppText><AppText variant="title">Your training plan</AppText><AppText style={styles.heroDescription}>Internal research preview only. Three authored sessions each week, paced by effort—not pace targets.</AppText></View><View style={styles.heroWeek}><AppText variant="label">12</AppText><AppText variant="meta">WEEKS</AppText></View></View>
       <View style={styles.statusLine}><View style={styles.previewDot} /><AppText style={styles.warning}>{previewStatus.message}</AppText></View>
@@ -113,13 +116,9 @@ function Preview({ value, selectedWeek, onSelectedWeekChange, onRegenerate, acti
       <AppText variant="meta">TRAINING DAYS · {value.feasibility.selectedWeekdays.map((day) => days[day]).join(' · ')}</AppText>
       {__DEV__ && <Disclosure title="Technical details" summary="Developer-only preview information"><AppText variant="meta">STRICT GATE · {value.strictProductionGate.kind.replaceAll('_', ' ').toUpperCase()}</AppText><AppText variant="meta">POLICY · {value.pathway.id}@{value.pathway.version}</AppText></Disclosure>}
     </Card>
-    <Card style={styles.weekCard}>
-      <View style={styles.weekHeader}><Pressable accessibilityRole="button" accessibilityLabel="Previous preview week" disabled={week === 1} onPress={() => setWeek(movePreviewWeek(week, -1))} style={[styles.arrow, week === 1 && styles.disabled]}><AppText variant="title">‹</AppText></Pressable><View style={styles.weekHeading}><AppText variant="meta">{calendarMonthYear(weekDays)}</AppText><AppText variant="label">Week {week} of 12{recoveryWeek ? ' · Recovery week' : ''}</AppText></View><Pressable accessibilityRole="button" accessibilityLabel="Next preview week" disabled={week === 12} onPress={() => setWeek(movePreviewWeek(week, 1))} style={[styles.arrow, week === 12 && styles.disabled]}><AppText variant="title">›</AppText></Pressable></View>
-      <View accessibilityLabel={`Preview week ${week} calendar`} style={styles.dayStrip}>{weekDays.map((item) => <View key={item.date} style={[styles.day, item.session && styles.plannedDay]}><AppText variant="meta" style={item.session && styles.plannedText}>{days[item.day]}</AppText><AppText variant="label" style={item.session && styles.plannedText}>{item.date.slice(-2)}</AppText><AppText variant="meta" style={item.session && styles.plannedText}>{item.session ? shortWorkoutLabel(item.session) : 'REST'}</AppText></View>)}</View>
-      {weekTotal > 0 && <View style={styles.weekFacts}><AppText variant="meta">{sessions.length} SESSIONS</AppText><AppText variant="meta">{formatSeconds(weekTotal)} SCHEDULED</AppText></View>}
-      {recoveryWeek && <AppText style={styles.recovery}>Recovery week: this protected lower-load structure comes from the draft policy pack.</AppText>}
-    </Card>
-    {sessions.map((session) => <Session key={`${session.week}${session.code}`} session={session} expanded={expanded === `${session.week}${session.code}`} onToggle={() => setExpanded((current) => current === `${session.week}${session.code}` ? null : `${session.week}${session.code}`)} />)}
+    <PlanWeekCalendar plan={plan} week={week} onWeekChange={setWeek} selectedWorkoutId={expanded} onSelectWorkout={(id) => setExpanded((current) => current === id ? null : id)} recoveryLabel={recoveryWeek ? 'Recovery week' : null} />
+    {weekTotal > 0 && <Card style={styles.weekCard}><View style={styles.weekFacts}><AppText variant="meta">{sessions.length} SESSIONS</AppText><AppText variant="meta">{formatSeconds(weekTotal)} SCHEDULED</AppText></View>{recoveryWeek && <AppText style={styles.recovery}>Recovery week: this protected lower-load structure comes from the draft policy pack.</AppText>}</Card>}
+    {plan.workouts.filter((workout) => workout.week === week).map((workout) => <PlanWorkoutSummaryCard key={workout.id} workout={workout} expanded={expanded === workout.id} onToggle={() => setExpanded((current) => current === workout.id ? null : workout.id)} />)}
     <Card>{publicationError && <AppText style={styles.error}>{publicationError}</AppText>}{canPublish && onPublish && <Button label={publishing ? 'Activating plan…' : 'Activate approved Week 1'} disabled={publishing} onPress={onPublish} />}<Button label="Refresh preview" tone="secondary" disabled={publishing} onPress={onRegenerate} /><Button label="Edit running information" tone="secondary" disabled={publishing} onPress={() => router.push('/onboarding/running?returnTo=/plan' as Href)} /><Button label="Start a run" disabled={publishing} onPress={() => router.push('/run?mode=run' as Href)} /></Card>
   </>;
 }

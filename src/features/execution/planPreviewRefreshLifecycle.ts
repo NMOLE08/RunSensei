@@ -39,5 +39,10 @@ export function selectedPreviewWeek(weeksByIdentity: Readonly<Record<string, num
 
 export function saveSelectedPreviewWeek(weeksByIdentity: Readonly<Record<string, number>>, identity: string, week: number, maximumWeek: number): Record<string, number> {
   const nextWeek = Math.max(1, Math.min(maximumWeek, week));
-  return weeksByIdentity[identity] === nextWeek ? weeksByIdentity : { ...weeksByIdentity, [identity]: nextWeek };
+  if (weeksByIdentity[identity] === nextWeek) return weeksByIdentity;
+  const entries = Object.entries(weeksByIdentity).filter(([key]) => key !== identity);
+  // This is screen-local continuity, not persisted programme state. Retaining a
+  // small recent set avoids carrying stale account/programme selections forever.
+  const retained = entries.slice(-11);
+  return Object.fromEntries([...retained, [identity, nextWeek]]);
 }
