@@ -26,10 +26,12 @@ export function useExperimentalHalfMarathonPreview(enabled: boolean, requested: 
   const goal = requested?.goal ?? null;
   const assessmentFingerprint = requested?.assessmentFingerprint ?? null;
   const evaluationDate = requested?.evaluationDate ?? null;
+  const pathwayChoice = requested?.pathwayChoice ?? null;
+  const pathwayRevision = requested?.pathwayRevision ?? null;
   const requestContext = useMemo<PlanPreviewIdentity | null>(() => {
     if (!hasRequestedContext || ownerId === null) return null;
-    return { ownerId, goal, assessmentFingerprint, evaluationDate };
-  }, [hasRequestedContext, ownerId, goal, assessmentFingerprint, evaluationDate]);
+    return { ownerId, goal, assessmentFingerprint, evaluationDate, pathwayChoice, pathwayRevision };
+  }, [hasRequestedContext, ownerId, goal, assessmentFingerprint, evaluationDate, pathwayChoice, pathwayRevision]);
   const refreshKey = requestContext ? planPreviewIdentityKey(requestContext) : 'loading';
   const [state, setState] = useState<PreviewState>({ status: enabled ? 'loading' : 'disabled', data: null, error: null, identity: null, source: null });
   const requestId = useRef(0);

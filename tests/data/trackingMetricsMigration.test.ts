@@ -6,7 +6,7 @@ describe('tracking metrics migration 21', () => {
   it('is additive and creates the versioned evidence tables', async () => {
     const database = new MemoryDatabase();
     await migrate(database, '2026-11-11T00:00:00.000Z');
-    expect(migrations.at(-1)?.version).toBe(27);
+    expect(migrations.at(-1)?.version).toBe(28);
     expect(database.statements.some(sql => sql.includes('CREATE TABLE IF NOT EXISTS tracking_metric_edges'))).toBe(true);
     expect(database.statements.some(sql => sql.includes('CREATE TABLE IF NOT EXISTS tracking_km_splits'))).toBe(true);
     expect(database.statements.some(sql => sql.includes('CREATE TABLE IF NOT EXISTS tracking_gps_state'))).toBe(true);

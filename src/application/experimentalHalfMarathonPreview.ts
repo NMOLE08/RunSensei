@@ -28,10 +28,10 @@ export async function openCurrentExperimentalHalfMarathonPreview(evaluationDate?
  */
 export async function openCurrentExperimentalHalfMarathonPreviewWithProvenance(evaluationDate?: string): Promise<CurrentExperimentalHalfMarathonPreviewResponse> {
   const facts = await loadCurrentAccountPlanFacts();
-  const previewContext = previewIdentityFor(facts.ownerId, facts.draft, new Date().toISOString(), evaluationDate ?? null);
+  const previewContext = previewIdentityFor(facts.ownerId, facts.draft, new Date().toISOString(), evaluationDate ?? null, facts.pathwayIntent);
   const unavailable = (reasonCodes: readonly string[], source: CurrentExperimentalHalfMarathonPreviewResponse['source'], extra: Omit<Extract<CurrentExperimentalHalfMarathonPreview, { kind: 'unavailable' }>, 'kind' | 'reasonCodes' | 'researchOnly' | 'productionEligible'> = {}) => ({ value: { kind: 'unavailable' as const, reasonCodes, researchOnly: true as const, productionEligible: false as const, ...extra }, previewContext, source });
   if (!facts.draft) return unavailable(['onboarding_or_assessment_missing'], 'not_applicable');
-  const foundationRequested = isDateOnly(facts.draft.foundationEvidenceConfirmedAt ?? '');
+  const foundationRequested = facts.pathwayIntent?.choice === 'foundation' || (!facts.pathwayIntent && isDateOnly(facts.draft.foundationEvidenceConfirmedAt ?? ''));
   const source = foundationRequested ? 'foundation' as const : facts.draft.goal === 'half_marathon' ? 'half_marathon' as const : 'not_applicable' as const;
   if (facts.draft.goal !== 'half_marathon' && !foundationRequested) return unavailable(['goal_not_half_marathon'], source);
   if (!facts.assessment) return unavailable(['onboarding_or_assessment_missing'], source);

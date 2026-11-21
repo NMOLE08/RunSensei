@@ -44,6 +44,14 @@ describe('Plan preview refresh lifecycle', () => {
     expect(shouldRequestPreviewForContext(planPreviewIdentityKey(context()), true, changed)).toBe(true);
   });
 
+  it('requests a fresh preview when a committed pathway choice or revision changes', () => {
+    const legacy = context();
+    const event = previewIdentityFor('account-a', { ...emptyFitnessAssessmentDraft('account-a', 'Asia/Calcutta'), goal: 'half_marathon', goalFocus: 'finish', planStartDate: '2027-01-04', trainingDays: [1, 3, 6], minuteLimits: { 1: '60', 3: '60', 6: '90' } }, '2027-01-01T00:00:00.000Z', '2027-01-01', { ownerId: 'account-a', goal: 'half_marathon', choice: 'event_preparation', schemaVersion: 1, revision: 1, updatedAt: 'now' });
+    const newerEvent = { ...event, pathwayRevision: 2 };
+    expect(shouldRequestPreviewForContext(planPreviewIdentityKey(legacy), true, event)).toBe(true);
+    expect(shouldRequestPreviewForContext(planPreviewIdentityKey(event), true, newerEvent)).toBe(true);
+  });
+
   it('refreshes active-plan and availability data only on a subsequent focus transition', () => {
     const initialFocus = nextPlanFocusRefresh(initialPlanFocusRefreshState);
     const returnToPlan = nextPlanFocusRefresh(initialFocus.state);

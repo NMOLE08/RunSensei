@@ -19,6 +19,8 @@ import { planPreviewIdentityKey } from '@/application/planPreviewIdentity';
 import { selectResearchPreview } from '@/features/execution/planResearchPreviewSelection';
 import { initialPlanFocusRefreshState, nextPlanFocusRefresh, saveSelectedPreviewWeek, selectedPreviewWeek } from '@/features/execution/planPreviewRefreshLifecycle';
 import { programmeSelectionIdentity } from '@/features/execution/researchPlanPresentation';
+import { saveCurrentHalfMarathonPathwayIntent } from '@/application/halfMarathonPathwayIntent';
+import type { HalfMarathonPathwayChoice } from '@/domain/planning/halfMarathonPathwayIntent';
 
 const asDate = (value: string) => value as `${number}-${number}-${number}`;
 
@@ -39,6 +41,8 @@ function AccountPlanScreen() {
   const [previewWeeks, setPreviewWeeks] = useState<Record<string, number>>({});
   const [publicationError, setPublicationError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [pathwaySaving, setPathwaySaving] = useState(false);
+  const [pathwayError, setPathwayError] = useState<string | null>(null);
   const publicationInFlight = useRef(false);
   const selectPreviewWeek = useCallback((identity: string, maximumWeek: number, week: number) => {
     setPreviewWeeks((current) => saveSelectedPreviewWeek(current, identity, week, maximumWeek));
@@ -68,6 +72,16 @@ function AccountPlanScreen() {
       setPublishing(false);
     }
   }, [reload, reloadAvailability]);
+  const choosePathway = useCallback(async (choice: HalfMarathonPathwayChoice) => {
+    if (pathwaySaving) return;
+    setPathwaySaving(true); setPathwayError(null);
+    try {
+      await saveCurrentHalfMarathonPathwayIntent(choice);
+      await reloadAvailability();
+    } catch (saveError) {
+      setPathwayError(saveError instanceof Error ? saveError.message : 'The pathway choice could not be saved. Try again.');
+    } finally { setPathwaySaving(false); }
+  }, [pathwaySaving, reloadAvailability]);
 
   if (availability.status === 'loading') return <Screen><AppText variant="meta">YOUR PLAN</AppText><StateCard title="Checking plan availability">Reviewing this account’s saved profile and plan status.</StateCard></Screen>;
   if (availability.status === 'unavailable') return <Screen><AppText variant="meta">YOUR PLAN</AppText><StateCard actionLabel="Try again" onAction={availability.reload} title="Plan status unavailable">{availability.error ?? 'Your plan availability could not be read while offline.'}</StateCard></Screen>;
@@ -88,7 +102,7 @@ function AccountPlanScreen() {
           ? { kind: 'half_marathon', policyReference: `${preview.policy.id}@${preview.policy.version}`, id: `${preview.weeks[0]?.workouts[0]?.date ?? ''}:${preview.weeks.at(-1)?.workouts.at(-1)?.date ?? ''}` }
           : { kind: 'foundation', policyReference: 'blocked', id: preview.reasonCodes.join(':') });
       const maximumWeek = preview.kind === 'foundation_program' ? preview.weeks.length : preview.kind === 'simulation' ? preview.weeks.length : 1;
-      return <Screen>{researchPreview.foundation && preview.kind === 'foundation_program' && <Button label="Saved research blocks" tone="secondary" onPress={() => router.push('/research-foundation' as Href)} />}<ExperimentalHalfMarathonPreviewCard value={preview} selectedWeek={selectedPreviewWeek(previewWeeks, programmeIdentity, maximumWeek)} onSelectedWeekChange={(week, max) => selectPreviewWeek(programmeIdentity, max, week)} foundation={researchPreview.foundation} onRegenerate={experimentalHalfPreview.reload} /></Screen>;
+      return <Screen>{researchPreview.foundation && preview.kind === 'foundation_program' && <Button label="Saved research blocks" tone="secondary" onPress={() => router.push('/research-foundation' as Href)} />}<ExperimentalHalfMarathonPreviewCard value={preview} selectedWeek={selectedPreviewWeek(previewWeeks, programmeIdentity, maximumWeek)} onSelectedWeekChange={(week, max) => selectPreviewWeek(programmeIdentity, max, week)} foundation={researchPreview.foundation} onRegenerate={experimentalHalfPreview.reload} pathwayChoice={previewContext?.pathwayChoice ?? null} pathwaySaving={pathwaySaving} pathwayError={pathwayError} onPathwayChoice={choosePathway} /></Screen>;
     }
     if (researchPreview.kind === 'loading') return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><StateCard title="Checking research preview">Comparing saved information with the bundled draft pathways. This cannot activate a plan.</StateCard></Screen>;
     if (researchPreview.kind === 'error') return <Screen><AppText variant="meta">YOUR PLAN</AppText><AppText variant="title">Training plan</AppText><StateCard actionLabel="Try again" onAction={experimentalHalfPreview.reload} title="Research preview unavailable">{researchPreview.message}</StateCard></Screen>;

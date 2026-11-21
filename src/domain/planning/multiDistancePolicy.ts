@@ -42,6 +42,7 @@ export function schedulePolicyWeek(policy: MultiDistanceTrainingPolicy, constrai
   const frequency = week.workouts.length;
   if (!policy.supportedFrequency.includes(frequency) || constraints.availableDays.length < frequency) return blocked(policy, [{ code: 'unsupported_frequency', week: weekNumber, slot: null, date: null, requiredMinutes: null, availableMinutes: null, policyReference: ref }]);
   const candidates = combinations([...constraints.availableDays].sort((a, b) => a.weekday - b.weekday), frequency).filter((days) => hasCircularSpacing(days.map((day) => day.weekday), policy.minimumRecoveryDays));
+  if (!candidates.length) return blocked(policy, [{ code: 'recovery_spacing', week: week.week, slot: null, date: null, requiredMinutes: null, availableMinutes: null, policyReference: ref }]);
   const attempts: MultiDistanceScheduleConflict[] = [];
   for (const days of candidates) {
     const ordered = [...days].sort((a, b) => a.weekday - b.weekday);

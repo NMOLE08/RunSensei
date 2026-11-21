@@ -1,6 +1,8 @@
 import { openAppDatabase } from '@/data/expoSqliteDatabase';
 import { migrate } from '@/data/migrations';
 import { FitnessAssessmentRepository } from '@/data/fitnessAssessmentRepository';
+import { HalfMarathonPathwayIntentRepository } from '@/data/halfMarathonPathwayIntentRepository';
+import type { HalfMarathonPathwayIntent } from '@/domain/planning/halfMarathonPathwayIntent';
 import { TrainingRepository } from '@/data/repositories';
 import { evaluatePlanAvailability, type PlanAvailability } from '@/domain/assessment/planAvailability';
 import { assessmentEvidenceFingerprint } from '@/domain/assessment/assessmentEvidence';
@@ -20,7 +22,7 @@ export type CurrentPlanAvailability = PlanAvailability & {
 export async function openPlanAvailability(): Promise<CurrentPlanAvailability> {
   const facts = await loadCurrentAccountPlanFacts();
   const availability=evaluatePlanAvailability({ draft: facts.draft, assessment: facts.assessment, activeSnapshot: facts.activeSnapshot });
-  const previewContext = previewIdentityFor(facts.ownerId, facts.draft);
+  const previewContext = previewIdentityFor(facts.ownerId, facts.draft, undefined, undefined, facts.draft?.goal === 'half_marathon' ? facts.pathwayIntent : null);
   // Historical saved weeks remain readable without a release-service round trip.
   if(facts.draft?.goal==='5k'&&!facts.activeSnapshot) {
     const {getCurrentBeginner5kPublicationStatus}=await import('./currentBeginner5kPublication');
@@ -30,7 +32,7 @@ export async function openPlanAvailability(): Promise<CurrentPlanAvailability> {
     // authorization boundary. Re-read once before combining its result so a
     // goal or evidence edit cannot pair an old availability with a new draft.
     const currentFacts = await loadCurrentAccountPlanFacts();
-    const currentContext = previewIdentityFor(currentFacts.ownerId, currentFacts.draft);
+    const currentContext = previewIdentityFor(currentFacts.ownerId, currentFacts.draft, undefined, undefined, currentFacts.draft?.goal === 'half_marathon' ? currentFacts.pathwayIntent : null);
     if (!samePlanPreviewIdentity(previewContext, currentContext)
       || !publication.previewContext
       || !samePlanPreviewIdentity(previewContext, publication.previewContext)) {
@@ -44,7 +46,7 @@ export async function openPlanAvailability(): Promise<CurrentPlanAvailability> {
   return {...availability,previewContext};
 }
 
-export type CurrentAccountPlanFacts = { ownerId: string; draft: FitnessAssessmentDraft | null; assessment: FitnessAssessmentResult | null; activeSnapshot: PlanSnapshot | null };
+export type CurrentAccountPlanFacts = { ownerId: string; draft: FitnessAssessmentDraft | null; assessment: FitnessAssessmentResult | null; activeSnapshot: PlanSnapshot | null; pathwayIntent: HalfMarathonPathwayIntent | null };
 
 /** Shared account-scoped facts for status and non-persistent research previews. */
 export async function loadCurrentAccountPlanFacts(): Promise<CurrentAccountPlanFacts> {
@@ -53,7 +55,8 @@ export async function loadCurrentAccountPlanFacts(): Promise<CurrentAccountPlanF
   await migrate(database, new Date().toISOString());
   const assessments = new FitnessAssessmentRepository(database, ownerId);
   const plans = new TrainingRepository(database, ownerId);
-  const [localDraft, latestAssessment, execution] = await Promise.all([assessments.loadDraft(), assessments.latestResult(), plans.getActiveExecution()]);
+  const intents = new HalfMarathonPathwayIntentRepository(database, ownerId);
+  const [localDraft, latestAssessment, execution, pathwayIntent] = await Promise.all([assessments.loadDraft(), assessments.latestResult(), plans.getActiveExecution(), intents.get()]);
   // A runner can sign in on a second device before a local draft exists. Read
   // their account-owned Supabase answers through RLS, but do not claim, alter,
   // or persist any legacy/other-account local data as part of this status read.
@@ -65,7 +68,7 @@ export async function loadCurrentAccountPlanFacts(): Promise<CurrentAccountPlanF
   const assessment = draft
     ? await assessments.resultForInputFingerprint(assessmentEvidenceFingerprint(draft)) ?? latestAssessment
     : latestAssessment;
-  return { ownerId, draft, assessment, activeSnapshot: execution?.snapshot ?? null };
+  return { ownerId, draft, assessment, activeSnapshot: execution?.snapshot ?? null, pathwayIntent };
 }
 
 async function loadAccountDraft(ownerId: string): Promise<FitnessAssessmentDraft | null> {

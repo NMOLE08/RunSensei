@@ -39,6 +39,20 @@ describe('experimental half-marathon preview application adapter', () => {
     expect(value.draft.longestSessionMinutes).toBe('75');
     expect(value.draft.goal).toBe('half_marathon');
   });
+  it('uses explicit event preparation instead of historical foundation confirmation', async () => {
+    const value = facts('event-choice', { foundationEvidenceConfirmedAt: '2027-01-01' });
+    value.pathwayIntent = { ownerId: 'event-choice', goal: 'half_marathon', choice: 'event_preparation', schemaVersion: 1, revision: 2, updatedAt: '2027-01-01T00:00:00.000Z' };
+    mockedFacts.mockResolvedValue(value);
+    const result = await openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01');
+    expect(result).toMatchObject({ source: 'half_marathon', previewContext: { pathwayChoice: 'event_preparation', pathwayRevision: 2 }, value: { kind: 'simulation', policy: { version: '0.3.0-calendar-draft' } } });
+    expect(value.draft.foundationEvidenceConfirmedAt).toBe('2027-01-01');
+  });
+  it('uses explicit foundation even where the historical confirmation is absent', async () => {
+    const value = facts('foundation-choice', { foundationEvidenceConfirmedAt: '' });
+    value.pathwayIntent = { ownerId: 'foundation-choice', goal: 'half_marathon', choice: 'foundation', schemaVersion: 1, revision: 1, updatedAt: '2027-01-01T00:00:00.000Z' };
+    mockedFacts.mockResolvedValue(value);
+    await expect(openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01')).resolves.toMatchObject({ source: 'foundation' });
+  });
   afterEach(() => jest.resetAllMocks());
   it('takes an eligible persisted assessment through readiness, policy selection, scheduling, validation, and a complete ten-week preview without persistence', async () => {
     mockedFacts.mockResolvedValue(facts('account-a'));

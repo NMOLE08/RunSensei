@@ -135,6 +135,9 @@ export const migrations = [
     `CREATE TABLE IF NOT EXISTS tracking_gps_diagnostic_events (owner_id TEXT NOT NULL, session_id TEXT NOT NULL, sequence INTEGER NOT NULL, event_json TEXT NOT NULL, recorded_at_ms INTEGER NOT NULL, PRIMARY KEY(owner_id, session_id, sequence))`,
     `CREATE INDEX IF NOT EXISTS idx_tracking_gps_diagnostic_events_session ON tracking_gps_diagnostic_events(owner_id, session_id, sequence)`,
   ] },
+  { version: 28, statements: [
+    `CREATE TABLE IF NOT EXISTS half_marathon_pathway_intents (owner_id TEXT NOT NULL, goal TEXT NOT NULL CHECK(goal = 'half_marathon'), choice TEXT NOT NULL CHECK(choice IN ('foundation','event_preparation')), schema_version INTEGER NOT NULL CHECK(schema_version = 1), revision INTEGER NOT NULL CHECK(revision > 0), updated_at TEXT NOT NULL, PRIMARY KEY(owner_id, goal))`,
+  ] },
 ];
 
 let migrationQueue: Promise<void> = Promise.resolve();
