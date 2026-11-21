@@ -51,7 +51,14 @@ describe('experimental half-marathon preview application adapter', () => {
     const value = facts('foundation-choice', { foundationEvidenceConfirmedAt: '' });
     value.pathwayIntent = { ownerId: 'foundation-choice', goal: 'half_marathon', choice: 'foundation', schemaVersion: 1, revision: 1, updatedAt: '2027-01-01T00:00:00.000Z' };
     mockedFacts.mockResolvedValue(value);
-    await expect(openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01')).resolves.toMatchObject({ source: 'foundation' });
+    await expect(openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01')).resolves.toMatchObject({ source: 'foundation', value: { kind: 'blocked', reasonCodes: ['current_foundation_evidence_required'] } });
+  });
+  it('uses actual saved foundation confirmation for an explicit foundation request', async () => {
+    const value = facts('foundation-confirmed', { foundationEvidenceConfirmedAt: '2027-01-01', foundationFrequency: 3 });
+    value.pathwayIntent = { ownerId: 'foundation-confirmed', goal: 'half_marathon', choice: 'foundation', schemaVersion: 1, revision: 1, updatedAt: '2027-01-01T00:00:00.000Z' };
+    mockedFacts.mockResolvedValue(value);
+    await expect(openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01')).resolves.toMatchObject({ source: 'foundation', value: { kind: 'foundation_program', researchOnly: true, productionEligible: false } });
+    expect(value.draft.foundationEvidenceConfirmedAt).toBe('2027-01-01');
   });
   afterEach(() => jest.resetAllMocks());
   it('takes an eligible persisted assessment through readiness, policy selection, scheduling, validation, and a complete ten-week preview without persistence', async () => {

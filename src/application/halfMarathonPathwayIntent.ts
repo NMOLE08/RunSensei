@@ -16,10 +16,10 @@ export async function loadCurrentHalfMarathonPathwayIntent(): Promise<HalfMarath
   return repository.get();
 }
 
-export async function saveCurrentHalfMarathonPathwayIntent(choice: HalfMarathonPathwayChoice): Promise<HalfMarathonPathwayIntent> {
+export async function saveCurrentHalfMarathonPathwayIntent(choice: HalfMarathonPathwayChoice, expectedRevision?: number | null): Promise<HalfMarathonPathwayIntent> {
   if (choice !== 'foundation' && choice !== 'event_preparation') throw new Error('unsupported_pathway_choice');
   const current = await openRepository();
-  const saved = await current.repository.save(choice, new Date().toISOString());
+  const saved = await current.repository.save(choice, new Date().toISOString(), expectedRevision);
   if (await requireActiveAccountId() !== current.ownerId) throw new Error('account_changed_while_saving_pathway');
   return saved;
 }
