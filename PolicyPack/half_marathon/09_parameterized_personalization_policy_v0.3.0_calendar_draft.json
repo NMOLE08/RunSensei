@@ -1,0 +1,52 @@
+{
+  "policy_id": "runsensei.half_marathon.parameterized_personalization",
+  "version": "0.3.0-calendar-draft",
+  "goal_family": "half_marathon",
+  "review_status": "draft",
+  "release_gate": { "can_activate": false },
+  "availability_time_requirement": "not_collected",
+  "provenance": {
+    "classification": "calendar_contract_successor_requires_qualified_coach_review",
+    "predecessor": "runsensei.half_marathon.parameterized_personalization@0.2.0-draft",
+    "limitations": "All numerical prescription fields are unchanged from v0.2.0-draft. Personal time availability is not assessed by this policy."
+  },
+  "evidence": {
+    "required": ["recent_weekly_minutes", "recent_longest_session_minutes", "comfortable_run_minutes", "longest_session_date", "interruption", "available_days"],
+    "accepted_sources": ["user_reported", "strava_import"],
+    "maximum_evidence_age_days": 28,
+    "conflicting_sources": "return_conflicting_evidence"
+  },
+  "program": {
+    "supported_program_weeks": [10],
+    "recovery_weeks": [4, 8],
+    "taper_week": 10,
+    "event": { "distance_meters": 21097.5, "duration": "unknown" }
+  },
+  "frequency_variants": {
+    "foundation_3_day": {
+      "frequency": 3,
+      "minimum_weekly_minutes": 90,
+      "minimum_longest_session_minutes": 40,
+      "minimum_comfortable_run_minutes": 20,
+      "starting_weekly": { "method": "clamp_recent_weekly_minutes", "minimum": 90, "maximum": 135, "round_to_minutes": 5 },
+      "starting_long_run": { "method": "clamp_recent_longest_minutes", "minimum": 40, "maximum": 55, "round_to_minutes": 5 },
+      "weekly_multipliers": [1, 1.1, 1.2, 0.9, 1.3, 1.4, 1.5, 1.1, 1.2, 1],
+      "long_run_multipliers": [1, 1.1, 1.2, 0.9, 1.3, 1.4, 1.5, 1.1, 1.2, 1],
+      "roles": ["easy", "steady", "long"]
+    },
+    "established_4_day": {
+      "frequency": 4,
+      "minimum_weekly_minutes": 150,
+      "minimum_longest_session_minutes": 60,
+      "minimum_comfortable_run_minutes": 30,
+      "starting_weekly": { "method": "clamp_recent_weekly_minutes", "minimum": 150, "maximum": 210, "round_to_minutes": 5 },
+      "starting_long_run": { "method": "clamp_recent_longest_minutes", "minimum": 60, "maximum": 80, "round_to_minutes": 5 },
+      "weekly_multipliers": [1, 1.1, 1.2, 0.9, 1.3, 1.4, 1.5, 1.1, 1.2, 1],
+      "long_run_multipliers": [1, 1.1, 1.2, 0.9, 1.3, 1.4, 1.5, 1.1, 1.2, 1],
+      "roles": ["easy", "quality", "easy", "long"]
+    }
+  },
+  "workout_structure": { "warmup_minutes": 5, "cooldown_minutes": 5, "intensity": "talk_test_or_rpe_only_no_pace_target" },
+  "scheduling": { "no_two_day_variant": true, "no_session_merging": true, "no_automatic_adaptation": true },
+  "review_requirements": ["Review all inherited numerical rules before release authorization.", "Personal time feasibility remains unassessed."]
+}

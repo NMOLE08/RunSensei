@@ -1,6 +1,6 @@
 import { buildMultiDistancePlanningInput } from './multiDistancePlanningInput';
 import { loadCurrentAccountPlanFacts } from './planAvailability';
-import { simulateHalfMarathonDraft, type HalfMarathonResearchSimulation } from '@/domain/planning/halfMarathonDraft';
+import { simulateCurrentHalfMarathonDraft, type HalfMarathonResearchSimulation } from '@/domain/planning/halfMarathonDraft';
 import { assessFitness } from '@/domain/assessment/assessFitness';
 import { generateCurrentFoundationProgram as generateFoundationProgram } from '@/domain/planning/foundationProgram';
 import { nextMondayOnOrAfter } from '@/domain/planning/runnerConstraints';
@@ -61,7 +61,7 @@ export async function openCurrentExperimentalHalfMarathonPreviewWithProvenance(e
   const planning = buildMultiDistancePlanningInput(facts.draft, facts.assessment);
   if (planning.kind === 'blocked') return unavailable(planning.reasonCodes, 'half_marathon', { missingEvidence: facts.assessment.missing, assessmentReasons: facts.assessment.reasons });
   if (planning.goalFamily !== 'half_marathon') return unavailable(['goal_not_half_marathon'], 'not_applicable');
-  return { value: simulateHalfMarathonDraft({ ownerId: facts.ownerId, weeklyMinutes: planning.evidence.weeklyMinutes, longestSessionMinutes: planning.evidence.longestSessionMinutes, comfortableRunMinutes: planning.evidence.comfortableRunMinutes, weeklyEvidenceObservedAt: isDateOnly(facts.draft.weeklyEvidenceConfirmedAt) ? facts.draft.weeklyEvidenceConfirmedAt : null, longestSessionDate: isDateOnly(facts.draft.longestSessionDate) ? facts.draft.longestSessionDate : null, interruption: facts.draft.interruption, healthConcern: facts.draft.healthConcern, availableDays: planning.constraints.availableDays, unavailableDates: planning.constraints.unavailableDates, preferredLongRunDay: planning.constraints.preferredLongRunDay, startDate: planning.constraints.startDate, fixedGoalDate: planning.constraints.fixedGoalDate, asOfDate: (evaluationDate ?? localDateOnly()) as `${number}-${number}-${number}`, returnReadiness: readiness }), previewContext, source: 'half_marathon' };
+  return { value: simulateCurrentHalfMarathonDraft({ ownerId: facts.ownerId, weeklyMinutes: planning.evidence.weeklyMinutes, longestSessionMinutes: planning.evidence.longestSessionMinutes, comfortableRunMinutes: planning.evidence.comfortableRunMinutes, weeklyEvidenceObservedAt: isDateOnly(facts.draft.weeklyEvidenceConfirmedAt) ? facts.draft.weeklyEvidenceConfirmedAt : null, longestSessionDate: isDateOnly(facts.draft.longestSessionDate) ? facts.draft.longestSessionDate : null, interruption: facts.draft.interruption, healthConcern: facts.draft.healthConcern, availableDays: planning.constraints.availableDays, unavailableDates: planning.constraints.unavailableDates, preferredLongRunDay: planning.constraints.preferredLongRunDay, startDate: planning.constraints.startDate, fixedGoalDate: planning.constraints.fixedGoalDate, asOfDate: (evaluationDate ?? localDateOnly()) as `${number}-${number}-${number}`, returnReadiness: readiness }), previewContext, source: 'half_marathon' };
 }
 
 function numberOrNull(value: string) { const parsed = Number(value); return Number.isFinite(parsed) && parsed > 0 ? parsed : null; }

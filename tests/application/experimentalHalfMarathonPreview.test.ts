@@ -45,6 +45,7 @@ describe('experimental half-marathon preview application adapter', () => {
     const result = await openCurrentExperimentalHalfMarathonPreview();
     expect(result).toMatchObject({ kind: 'simulation', researchOnly: true, productionEligible: false });
     if (result.kind === 'simulation') {
+      expect(result.policy.version).toBe('0.3.0-calendar-draft');
       expect(result.weeks).toHaveLength(10);
       expect(result.weeks.flatMap((week) => week.workouts)).toHaveLength(30);
       expect(result.validation).toEqual({ valid: true, issues: [] });
@@ -52,6 +53,15 @@ describe('experimental half-marathon preview application adapter', () => {
     }
     expect(mockedFacts).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(result)).not.toContain('activeRevisionId');
+  });
+  it('uses the calendar-only successor when daily time limits were not collected', async () => {
+    mockedFacts.mockResolvedValue(facts('account-calendar-only', { minuteLimits: {}, minuteLimitConfirmedDays: [] }));
+    const result = await openCurrentExperimentalHalfMarathonPreview();
+    expect(result).toMatchObject({ kind: 'simulation', policy: { version: '0.3.0-calendar-draft' }, researchOnly: true, productionEligible: false });
+    if (result.kind === 'simulation') {
+      expect(result.weeks.flatMap((week) => week.workouts)).toHaveLength(30);
+      expect(result.weeks.every((week) => week.warnings.includes('personal_time_availability_not_assessed'))).toBe(true);
+    }
   });
   it('does not treat a record timestamp-only change as changed runner evidence', async () => {
     const value = facts('account-a');
