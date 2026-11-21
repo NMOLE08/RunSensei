@@ -22,6 +22,19 @@ describe('question-by-question onboarding flow', () => {
     expect(active.some((screen) => screen.id === 'running-effort')).toBe(true);
   });
 
+  it('keeps all nine V2 coaching-evidence inputs reachable without making them onboarding requirements', () => {
+    const active = activeOnboardingQuestionScreens({ ...draft(), currentTrainingStatus: 'currently_training' }, false);
+    const v2Screens = ['goal-intent', 'running-history', 'running-context', 'running-capacity', 'running-effort', 'availability-frequency'];
+    for (const id of v2Screens) {
+      expect(active.find((screen) => screen.id === id)).toBeDefined();
+    }
+    // Running-history and running-capacity also contain pre-existing required
+    // assessment facts. The V2-only intent, effort, and preference inputs stay optional.
+    expect(active.find((screen) => screen.id === 'goal-intent')?.requirements).toEqual([]);
+    expect(active.find((screen) => screen.id === 'running-effort')?.requirements).toEqual([]);
+    expect(active.find((screen) => screen.id === 'availability-frequency')?.requirements).toEqual([]);
+  });
+
   it('keeps preferred training frequency separate from available weekdays and research foundation frequency', () => {
     const screens = activeOnboardingQuestionScreens(draft(), true);
     expect(screens.findIndex((screen) => screen.id === 'availability-frequency')).toBeLessThan(screens.findIndex((screen) => screen.id === 'availability-days'));

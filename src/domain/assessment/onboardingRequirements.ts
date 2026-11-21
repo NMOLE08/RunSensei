@@ -25,6 +25,11 @@ export type OnboardingRequirement =
   | 'coach_introduction';
 
 export type OnboardingRequirementTarget = { step: OnboardingStep; focus: string; label: string };
+export type OnboardingValidationIssue = Readonly<{
+  requirement: OnboardingRequirement;
+  target: OnboardingRequirementTarget;
+  message: string;
+}>;
 
 const targets: Record<OnboardingRequirement, OnboardingRequirementTarget> = {
   weekly_running_minutes: { step: 'running', focus: 'weekly-running', label: 'weekly running minutes (needed for the time-based half-marathon preview)' },
@@ -46,6 +51,28 @@ const targets: Record<OnboardingRequirement, OnboardingRequirementTarget> = {
   available_minutes_confirmation: { step: 'availability', focus: 'available-minutes-confirmation', label: 'confirm available minutes' },
   coach_selection: { step: 'coach', focus: 'coach-selection', label: 'preferred coach' },
   coach_introduction: { step: 'coach', focus: 'coach-introduction', label: 'coach introduction confirmation' },
+};
+
+const messages: Record<OnboardingRequirement, string> = {
+  recent_weekly_running: 'Enter recent weekly running time, or add a positive weekly distance.',
+  weekly_running_minutes: 'Enter your recent weekly running time for this half-marathon preparation check.',
+  current_training_context: 'Choose whether you are currently training, returning after a break, or starting for the first time.',
+  current_capacity_confirmation: 'Confirm that these running-capacity details are current.',
+  longest_session_minutes: 'Enter the duration of your longest recent session.',
+  longest_session_date: 'Select when your longest recent session took place.',
+  comfortable_running_minutes: 'Enter how long you can comfortably run continuously today.',
+  recent_interruption: 'Choose the answer that best describes any recent interruption.',
+  adult_confirmation: 'Answer whether you are 18 or older.',
+  walking_comfort: 'Answer whether you can comfortably walk for 30 minutes.',
+  first_5k_experience: 'Choose the option that best describes your first-5K experience.',
+  goal: 'Choose the goal you want to work toward.',
+  plan_start_date: 'Select when you would like your plan to begin.',
+  goal_date: 'Select the fixed event date, or turn off the fixed-date option.',
+  training_days: 'Choose at least one day you can genuinely train.',
+  available_minutes: 'Add the available time for this training day.',
+  available_minutes_confirmation: 'Confirm the available time for this training day.',
+  coach_selection: 'Choose Moss or Jett as your coach.',
+  coach_introduction: 'Play or skip your coach introduction before continuing.',
 };
 
 const positive = (value: string | undefined) => Number.isFinite(Number(value)) && Number(value) > 0;
@@ -96,6 +123,16 @@ export function missingRequirementsForStep(draft: FitnessAssessmentDraft, step: 
 
 export function targetForOnboardingRequirement(requirement: OnboardingRequirement): OnboardingRequirementTarget {
   return targets[requirement];
+}
+
+export function validationIssueForRequirement(requirement: OnboardingRequirement): OnboardingValidationIssue {
+  return { requirement, target: targets[requirement], message: messages[requirement] };
+}
+
+/** A focus route can point at a grouped field; preserve its declared order. */
+export function requirementsForOnboardingFocus(focus?: string): readonly OnboardingRequirement[] {
+  if (!focus) return [];
+  return (Object.keys(targets) as OnboardingRequirement[]).filter((requirement) => targets[requirement].focus === focus);
 }
 
 /** Maps assessment wording to the actual field; legacy assessments use grouped wording. */

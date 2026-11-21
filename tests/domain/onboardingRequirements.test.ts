@@ -1,4 +1,4 @@
-import { editPathForRequirement, isReadyForCoachSelection, missingOnboardingRequirements, missingRequirementsForStep, targetForAssessmentMissing } from '@/domain/assessment/onboardingRequirements';
+import { editPathForRequirement, isReadyForCoachSelection, missingOnboardingRequirements, missingRequirementsForStep, requirementsForOnboardingFocus, targetForAssessmentMissing, validationIssueForRequirement } from '@/domain/assessment/onboardingRequirements';
 import { emptyFitnessAssessmentDraft } from '@/domain/assessment/types';
 
 function completeDraft() {
@@ -56,6 +56,29 @@ it('requests minutes explicitly when only distance is supplied for a current hal
   const missing = missingOnboardingRequirements({ ...completeDraft(), goal: 'half_marathon', currentTrainingStatus: 'currently_training', weeklyMinutes: '', weeklyDistance: '12' });
   expect(missing).toContain('weekly_running_minutes');
   expect(missing).toContain('current_capacity_confirmation');
+});
+
+it('maps a weekly-running validation route to the specific missing requirement and message', () => {
+  expect(requirementsForOnboardingFocus('weekly-running')).toEqual(['weekly_running_minutes', 'recent_weekly_running']);
+  expect(validationIssueForRequirement('weekly_running_minutes')).toMatchObject({
+    target: { step: 'running', focus: 'weekly-running' },
+    message: 'Enter your recent weekly running time for this half-marathon preparation check.',
+  });
+});
+
+it('does not mistake optional V2 running-frequency context for required weekly running evidence', () => {
+  const draft = {
+    ...completeDraft(),
+    goal: 'half_marathon' as const,
+    currentTrainingStatus: 'currently_training' as const,
+    observedWeeklyRunFrequency: 2 as const,
+    weeklyMinutes: '',
+    weeklyDistance: '12',
+  };
+  const missing = missingOnboardingRequirements(draft);
+  expect(missing).toContain('weekly_running_minutes');
+  expect(missing).not.toContain('recent_weekly_running');
+  expect(missing).not.toContain('observed_weekly_run_frequency' as never);
 });
 
 it('does not demand false current-capacity confirmation from a returning runner', () => {
