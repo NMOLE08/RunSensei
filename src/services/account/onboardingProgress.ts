@@ -10,9 +10,9 @@ type ProgressRow = { status: RemoteOnboardingStatus; current_step: string | null
 const answerFields: (keyof FitnessAssessmentDraft)[] = [
   'foundationEvidenceConfirmedAt',
   'foundationFrequency', 'foundationPostBreakConfirmed',
-  'weeklyDistance', 'weeklyDistanceUnit', 'weeklyMinutes', 'historyDays', 'weeklyEvidenceConfirmedAt', 'currentCapabilityConfirmedAt', 'currentTrainingStatus', 'lastRunningDate', 'interruptionReason', 'longestSessionMinutes', 'longestSessionDate', 'comfortableRunMinutes',
+  'weeklyDistance', 'weeklyDistanceUnit', 'weeklyMinutes', 'historyDays', 'observedWeeklyRunFrequency', 'runningConsistency', 'weeklyEvidenceConfirmedAt', 'currentCapabilityConfirmedAt', 'currentTrainingStatus', 'lastRunningDate', 'interruptionReason', 'longestSessionMinutes', 'longestSessionDate', 'longestSessionDistance', 'longestSessionDistanceUnit', 'comfortableRunMinutes', 'runningStyle', 'easyRunTalkTest', 'usualComfortableRunEffort',
   'interruption', 'interruptionNote', 'healthConcern', 'performanceDistanceMeters', 'performanceSeconds', 'performanceDate', 'performanceKind', 'performanceEffort', 'performanceQuality',
-  'goal', 'goalFocus', 'targetTimeSeconds', 'goalDate', 'goalDateFixed', 'planStartDate', 'trainingDays', 'minuteLimits', 'minuteLimitConfirmedDays', 'preferredLongDay', 'unavailableDates', 'units', 'timezone',
+  'goal', 'goalFocus', 'trainingObjective', 'targetTimeSeconds', 'goalDate', 'goalDateFixed', 'planStartDate', 'preferredTrainingFrequency', 'trainingDays', 'minuteLimits', 'minuteLimitConfirmedDays', 'preferredLongDay', 'unavailableDates', 'units', 'timezone',
   'adultAgeConfirmed', 'canWalk30MinutesComfortably', 'first5kExperience',
   'coachId', 'coachIntroAcknowledged',
 ];

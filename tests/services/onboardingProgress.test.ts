@@ -39,4 +39,24 @@ describe('account onboarding answer mapping', () => {
       performanceDate: '2026-10-30', planStartDate: '2026-11-10', goalDate: '2027-03-01', unavailableDates: '2026-11-14, 2026-11-18',
     });
   });
+
+  it('serializes V2 coaching evidence without conflating performance intent and target time', () => {
+    const draft = {
+      ...emptyFitnessAssessmentDraft('account-a', 'Asia/Kolkata'),
+      trainingObjective: 'improve_performance' as const,
+      goalFocus: 'finish' as const,
+      observedWeeklyRunFrequency: 'variable' as const,
+      preferredTrainingFrequency: 4 as const,
+      runningStyle: 'run_walk' as const,
+      easyRunTalkTest: 'short_phrases' as const,
+      usualComfortableRunEffort: 'somewhat_hard' as const,
+      longestSessionDistance: '7.5',
+      longestSessionDistanceUnit: 'km' as const,
+    };
+    expect(onboardingAnswers(draft)).toMatchObject({
+      trainingObjective: 'improve_performance', goalFocus: 'finish', observedWeeklyRunFrequency: 'variable', preferredTrainingFrequency: 4,
+      runningStyle: 'run_walk', easyRunTalkTest: 'short_phrases', usualComfortableRunEffort: 'somewhat_hard',
+      longestSessionDistance: '7.5', longestSessionDistanceUnit: 'km',
+    });
+  });
 });

@@ -14,6 +14,21 @@ describe('question-by-question onboarding flow', () => {
     expect(screens.findIndex((screen) => screen.id === 'first5-check')).toBeGreaterThan(screens.findIndex((screen) => screen.id === 'goal-choice'));
   });
 
+  it('starts V2 with the goal and keeps effort evidence conditional for currently active runners', () => {
+    const inactive = activeOnboardingQuestionScreens({ ...draft(), currentTrainingStatus: 'first_time_runner' }, false);
+    const active = activeOnboardingQuestionScreens({ ...draft(), currentTrainingStatus: 'currently_training' }, false);
+    expect(inactive[0]?.id).toBe('goal-choice');
+    expect(inactive.some((screen) => screen.id === 'running-effort')).toBe(false);
+    expect(active.some((screen) => screen.id === 'running-effort')).toBe(true);
+  });
+
+  it('keeps preferred training frequency separate from available weekdays and research foundation frequency', () => {
+    const screens = activeOnboardingQuestionScreens(draft(), true);
+    expect(screens.findIndex((screen) => screen.id === 'availability-frequency')).toBeLessThan(screens.findIndex((screen) => screen.id === 'availability-days'));
+    expect(screens.find((screen) => screen.id === 'availability-frequency')?.requirements).toEqual([]);
+    expect(screens.find((screen) => screen.id === 'foundation-settings')?.requirements).toEqual([]);
+  });
+
   it('omits first-5K questions for a non-5K goal', () => {
     const screens = activeOnboardingQuestionScreens({ ...draft(), goal: '10k' }, false);
     expect(screens.some((screen) => screen.id === 'first5-check')).toBe(false);

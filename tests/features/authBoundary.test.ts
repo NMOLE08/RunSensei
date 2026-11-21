@@ -37,6 +37,6 @@ describe('account-first route decisions', () => {
   it('sends a completed account to home and defaults an invalid step safely', () => {
     expect(requiredAccountRoute('ready', { status: 'completed', currentStep: 'assessment', schemaVersion: 3, answers: {} })).toBe('/');
     expect(requiredAccountRoute('ready', { status: 'completed', currentStep: 'assessment', schemaVersion: 6, answers: {} })).toBe('/');
-    expect(requiredAccountRoute('ready', { status: 'in_progress', currentStep: 'unexpected', schemaVersion: 3, answers: {} })).toBe('/onboarding/running');
+    expect(requiredAccountRoute('ready', { status: 'in_progress', currentStep: 'unexpected', schemaVersion: 3, answers: {} })).toBe('/onboarding/goal');
   });
 });

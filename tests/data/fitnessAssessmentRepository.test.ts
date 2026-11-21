@@ -22,6 +22,14 @@ it('keeps edits as new evidence and isolates identical answers for different acc
   expect(new Set(db.table('fitness_assessments').map((row) => row.owner_id))).toEqual(new Set(['account-a', 'account-b']));
 });
 
+it('keeps schema-8 coaching evidence isolated with its owning account draft', async () => {
+  const db = new MemoryDatabase(); const a = new FitnessAssessmentRepository(db, 'account-a'); const b = new FitnessAssessmentRepository(db, 'account-b');
+  await saveFitnessAssessmentDraft(a, { ...draft('account-a'), observedWeeklyRunFrequency: 4, runningStyle: 'continuous', preferredTrainingFrequency: 3 });
+  await saveFitnessAssessmentDraft(b, { ...draft('account-b'), observedWeeklyRunFrequency: 'variable', runningStyle: 'run_walk', preferredTrainingFrequency: 4 });
+  expect(await a.loadDraft()).toMatchObject({ ownerId: 'account-a', observedWeeklyRunFrequency: 4, runningStyle: 'continuous', preferredTrainingFrequency: 3 });
+  expect(await b.loadDraft()).toMatchObject({ ownerId: 'account-b', observedWeeklyRunFrequency: 'variable', runningStyle: 'run_walk', preferredTrainingFrequency: 4 });
+});
+
 it('resolves the immutable assessment for an exact evidence fingerprint instead of relying on timestamp order', async () => {
   const db = new MemoryDatabase(); const repository = new FitnessAssessmentRepository(db, 'account-a');
   const original = draft('account-a', '90');

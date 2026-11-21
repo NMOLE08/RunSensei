@@ -10,7 +10,7 @@ const onboardingSteps = new Set(['running', 'performance', 'goal', 'availability
 export function requiredAccountRoute(status: AuthStatus, onboarding: RemoteOnboardingProgress | null): string | null {
   if (status === 'signed_out') return '/auth';
   if (status !== 'ready') return null;
-  if (onboarding?.status !== 'completed') return `/onboarding/${onboardingSteps.has(onboarding?.currentStep ?? '') ? onboarding?.currentStep : 'running'}`;
+  if (onboarding?.status !== 'completed') return `/onboarding/${onboardingSteps.has(onboarding?.currentStep ?? '') ? onboarding?.currentStep : 'goal'}`;
   return '/';
 }
 
