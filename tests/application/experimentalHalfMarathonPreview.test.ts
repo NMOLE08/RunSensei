@@ -60,7 +60,7 @@ describe('experimental half-marathon preview application adapter', () => {
     expect(result).toMatchObject({ kind: 'simulation', policy: { version: '0.3.0-calendar-draft' }, researchOnly: true, productionEligible: false });
     if (result.kind === 'simulation') {
       expect(result.weeks.flatMap((week) => week.workouts)).toHaveLength(30);
-      expect(result.weeks.every((week) => week.warnings.includes('personal_time_availability_not_assessed'))).toBe(true);
+      expect(result.weeks.every((week) => week.warnings?.includes('personal_time_availability_not_assessed') === true)).toBe(true);
     }
   });
   it('does not treat a record timestamp-only change as changed runner evidence', async () => {

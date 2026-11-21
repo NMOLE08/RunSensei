@@ -81,7 +81,7 @@ describe('calendar-only half-marathon research successor', () => {
     if (result.kind === 'simulation') {
       expect(result.weeks).toHaveLength(10);
       expect(result.weeks.flatMap((week) => week.workouts)).toHaveLength(30);
-      expect(result.weeks.every((week) => week.warnings.includes('personal_time_availability_not_assessed'))).toBe(true);
+      expect(result.weeks.every((week) => week.warnings?.includes('personal_time_availability_not_assessed') === true)).toBe(true);
       expect(result.weeks[0]?.workouts.map((workout) => workout.date)).toEqual(['2027-01-05', '2027-01-07', '2027-01-10']);
       expect(result.weeks[9]?.workouts.find((workout) => workout.role === 'event')?.target).toEqual({ kind: 'distance_meters', value: 21097.5 });
       expect(result.validation).toEqual({ valid: true, issues: [] });
@@ -118,6 +118,12 @@ describe('calendar-only half-marathon research successor', () => {
     expect(current).toMatchObject({ version: '0.3.0-calendar-draft', releaseAuthorized: false, availabilityTimeRequirement: 'not_collected', missingCapabilities: expect.arrayContaining(['personal_time_availability_not_assessed']) });
     expect(current.requiredEvidence).not.toContain('confirmed_day_limits');
     expect(validateCurrentHalfMarathonPolicy()).toEqual([]);
+  });
+
+  it('does not change the historical serialized week shape', () => {
+    const legacy = simulateHalfMarathonDraft(input({ availableDays: confirmedDays3 }));
+    expect(legacy).toMatchObject({ kind: 'simulation' });
+    if (legacy.kind === 'simulation') expect(legacy.weeks.every((week) => !Object.prototype.hasOwnProperty.call(week, 'warnings'))).toBe(true);
   });
 
   it('preserves evidence, capacity, health, interruption, calendar and event-date guards', () => {
