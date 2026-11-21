@@ -27,6 +27,7 @@ describe('experimental half-marathon preview application adapter', () => {
     const value = facts('foundation-account', { weeklyMinutes: '50', comfortableRunMinutes: '45', longestSessionMinutes: '75', longestSessionDate: '2025-01-01', currentCapabilityConfirmedAt: '', foundationEvidenceConfirmedAt: '2027-01-01', trainingDays: [0, 1, 3, 6], minuteLimits: { 0: '30', 1: '30', 3: '30', 6: '30' }, minuteLimitConfirmedDays: [0, 1, 3, 6] });
     mockedFacts.mockResolvedValue(value);
     value.draft.foundationFrequency = 3;
+    value.pathwayIntent = { ownerId: value.ownerId, goal: 'half_marathon', choice: 'foundation', schemaVersion: 1, revision: 1, updatedAt: '2027-01-01T00:00:00.000Z' };
     value.assessment = assessFitness(value.draft);
     const result = await openCurrentExperimentalHalfMarathonPreview();
     expect(result).toMatchObject({ kind: 'foundation_program', validation: { valid: true }, researchOnly: true, productionEligible: false });
@@ -47,6 +48,15 @@ describe('experimental half-marathon preview application adapter', () => {
     expect(result).toMatchObject({ source: 'half_marathon', previewContext: { pathwayChoice: 'event_preparation', pathwayRevision: 2 }, value: { kind: 'simulation', policy: { version: '0.3.0-calendar-draft' } } });
     expect(value.draft.foundationEvidenceConfirmedAt).toBe('2027-01-01');
   });
+  it('does not treat a legacy foundation-evidence confirmation as an implicit half-marathon pathway choice', async () => {
+    const value = facts('legacy-half-marathon', { foundationEvidenceConfirmedAt: '2027-01-01', foundationFrequency: 3 });
+    mockedFacts.mockResolvedValue(value);
+    await expect(openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01')).resolves.toMatchObject({
+      source: 'half_marathon',
+      previewContext: { pathwayChoice: null },
+      value: { kind: 'simulation', policy: { version: '0.3.0-calendar-draft' } },
+    });
+  });
   it('uses explicit foundation even where the historical confirmation is absent', async () => {
     const value = facts('foundation-choice', { foundationEvidenceConfirmedAt: '' });
     value.pathwayIntent = { ownerId: 'foundation-choice', goal: 'half_marathon', choice: 'foundation', schemaVersion: 1, revision: 1, updatedAt: '2027-01-01T00:00:00.000Z' };
@@ -59,6 +69,22 @@ describe('experimental half-marathon preview application adapter', () => {
     mockedFacts.mockResolvedValue(value);
     await expect(openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01')).resolves.toMatchObject({ source: 'foundation', value: { kind: 'foundation_program', researchOnly: true, productionEligible: false } });
     expect(value.draft.foundationEvidenceConfirmedAt).toBe('2027-01-01');
+  });
+  it('switches only between the current account’s committed foundation and event intents', async () => {
+    const value = facts('pathway-switch', { foundationEvidenceConfirmedAt: '2027-01-01', foundationFrequency: 3 });
+    mockedFacts.mockResolvedValue(value);
+
+    value.pathwayIntent = { ownerId: value.ownerId, goal: 'half_marathon', choice: 'foundation', schemaVersion: 1, revision: 1, updatedAt: '2027-01-01T00:00:00.000Z' };
+    await expect(openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01')).resolves.toMatchObject({ source: 'foundation', previewContext: { pathwayChoice: 'foundation', pathwayRevision: 1 }, value: { kind: 'foundation_program' } });
+
+    value.pathwayIntent = { ...value.pathwayIntent, choice: 'event_preparation', revision: 2 };
+    await expect(openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01')).resolves.toMatchObject({ source: 'half_marathon', previewContext: { pathwayChoice: 'event_preparation', pathwayRevision: 2 }, value: { kind: 'simulation', policy: { version: '0.3.0-calendar-draft' } } });
+
+    value.pathwayIntent = { ...value.pathwayIntent, choice: 'foundation', revision: 3 };
+    await expect(openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01')).resolves.toMatchObject({ source: 'foundation', previewContext: { pathwayChoice: 'foundation', pathwayRevision: 3 }, value: { kind: 'foundation_program' } });
+
+    value.pathwayIntent = { ...value.pathwayIntent, choice: 'event_preparation', revision: 4 };
+    await expect(openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01')).resolves.toMatchObject({ source: 'half_marathon', previewContext: { pathwayChoice: 'event_preparation', pathwayRevision: 4 }, value: { kind: 'simulation', policy: { version: '0.3.0-calendar-draft' } } });
   });
   afterEach(() => jest.resetAllMocks());
   it('takes an eligible persisted assessment through readiness, policy selection, scheduling, validation, and a complete ten-week preview without persistence', async () => {

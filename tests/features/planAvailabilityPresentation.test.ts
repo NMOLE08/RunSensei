@@ -49,7 +49,7 @@ describe('Plan availability explanations', () => {
     expect(marathon.reasons).toContain('marathon_event_programme_not_authored');
     expect(consumerStatusForPlanAvailability(marathon)).toMatchObject({ code: 'program_not_supported', activePlan: false });
     expect(presentPlanAvailability(marathon)).toMatchObject({
-      title: 'Marathon event plan is not authored',
+      title: 'Marathon event programme not available yet',
       actionLabel: null,
       actionPath: null,
     });

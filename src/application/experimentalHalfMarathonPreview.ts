@@ -31,7 +31,12 @@ export async function openCurrentExperimentalHalfMarathonPreviewWithProvenance(e
   const previewContext = previewIdentityFor(facts.ownerId, facts.draft, new Date().toISOString(), evaluationDate ?? null, facts.pathwayIntent);
   const unavailable = (reasonCodes: readonly string[], source: CurrentExperimentalHalfMarathonPreviewResponse['source'], extra: Omit<Extract<CurrentExperimentalHalfMarathonPreview, { kind: 'unavailable' }>, 'kind' | 'reasonCodes' | 'researchOnly' | 'productionEligible'> = {}) => ({ value: { kind: 'unavailable' as const, reasonCodes, researchOnly: true as const, productionEligible: false as const, ...extra }, previewContext, source });
   if (!facts.draft) return unavailable(['onboarding_or_assessment_missing'], 'not_applicable');
-  const foundationRequested = facts.pathwayIntent?.choice === 'foundation' || (!facts.pathwayIntent && isDateOnly(facts.draft.foundationEvidenceConfirmedAt ?? ''));
+  // A confirmation says the evidence is current; it is not a runner's choice
+  // to leave half-marathon event preparation for a foundation programme. For
+  // 21K, only the durable pathway intent selects Foundation. Older 5K/10K/42K
+  // foundation research still keeps its confirmation-based compatibility path.
+  const foundationRequested = facts.pathwayIntent?.choice === 'foundation'
+    || (facts.draft.goal !== 'half_marathon' && !facts.pathwayIntent && isDateOnly(facts.draft.foundationEvidenceConfirmedAt ?? ''));
   const source = foundationRequested ? 'foundation' as const : facts.draft.goal === 'half_marathon' ? 'half_marathon' as const : 'not_applicable' as const;
   if (facts.draft.goal !== 'half_marathon' && !foundationRequested) return unavailable(['goal_not_half_marathon'], source);
   if (!facts.assessment) return unavailable(['onboarding_or_assessment_missing'], source);

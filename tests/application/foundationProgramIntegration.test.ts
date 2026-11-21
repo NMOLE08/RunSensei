@@ -25,7 +25,7 @@ const scenarios: [string, Partial<FitnessAssessmentDraft>, string][] = [
 ];
 it.each(scenarios)('passes %s through saved evidence and assessment into the preview adapter', async (id, changes, kind) => {
   const draft: FitnessAssessmentDraft = { ...emptyFitnessAssessmentDraft(`synthetic-${id}`, 'Asia/Kolkata'), goal: 'half_marathon', weeklyMinutes: '50', comfortableRunMinutes: '45', longestSessionMinutes: '75', longestSessionDate: '2025-01-01', interruption: 'none', currentTrainingStatus: 'currently_training', planStartDate: '2027-01-04', foundationEvidenceConfirmedAt: '2027-01-01', foundationFrequency: 3, trainingDays: [1,3,6], minuteLimits: {1:'45',3:'45',5:'45',6:'45'}, minuteLimitConfirmedDays: [1,3,5,6], ...changes };
-  const facts = {ownerId: draft.ownerId, draft, assessment: assessFitness(draft, '2027-01-01T00:00:00Z'), activeSnapshot: null};
+  const facts = {ownerId: draft.ownerId, draft, assessment: assessFitness(draft, '2027-01-01T00:00:00Z'), activeSnapshot: null, pathwayIntent: draft.goal === 'half_marathon' ? { ownerId: draft.ownerId, goal: 'half_marathon' as const, choice: 'foundation' as const, schemaVersion: 1 as const, revision: 1, updatedAt: '2027-01-01T00:00:00.000Z' } : null};
   load.mockResolvedValue(facts);
   const before = JSON.stringify(facts);
   const result = await openCurrentExperimentalHalfMarathonPreview();

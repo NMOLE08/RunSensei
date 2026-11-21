@@ -68,7 +68,7 @@ export function presentPlanAvailability(value: PlanAvailability): PlanAvailabili
     actionLabel: 'Review available days', actionPath: '/onboarding/availability?returnTo=/plan&focus=training-days',
   };
   if (value.reasons.includes('marathon_event_programme_not_authored')) return {
-    title: 'Marathon event plan is not authored',
+    title: 'Marathon event programme not available yet',
     explanation: 'Your marathon goal is saved, but Torto has no bundled marathon event-programme policy or generator. It will not reuse half-marathon workouts or invent a 42K schedule.',
     actionLabel: null, actionPath: null,
   };

@@ -32,7 +32,7 @@ class TrackingTestDatabase extends MemoryDatabase {
 let db: MemoryDatabase;
 function facts(changes: Partial<FitnessAssessmentDraft> = {}) {
   const draft: FitnessAssessmentDraft = { ...emptyFitnessAssessmentDraft('account-a','Asia/Kolkata'), goal:'half_marathon', weeklyMinutes:'50',comfortableRunMinutes:'45',longestSessionMinutes:'75',longestSessionDate:'2025-01-01',currentTrainingStatus:'currently_training', interruption:'none',planStartDate:'2027-01-04',foundationEvidenceConfirmedAt:'2027-01-01',foundationFrequency:3,trainingDays:[1,3,6],minuteLimits:{1:'45',3:'45',6:'45'},minuteLimitConfirmedDays:[1,3,6],...changes };
-  const result={ownerId:draft.ownerId,draft,assessment:assessFitness(draft,'2027-02-01T00:00:00Z'),activeSnapshot:null};
+  const result={ownerId:draft.ownerId,draft,assessment:assessFitness(draft,'2027-02-01T00:00:00Z'),activeSnapshot:null,pathwayIntent:draft.goal==='half_marathon'?{ownerId:draft.ownerId,goal:'half_marathon' as const,choice:'foundation' as const,schemaVersion:1 as const,revision:1,updatedAt:'2027-01-01T00:00:00.000Z'}:null};
   jest.mocked(loadCurrentAccountPlanFacts).mockResolvedValue(result);return result;
 }
 beforeEach(()=>{jest.useFakeTimers({doNotFake:['nextTick','setImmediate']});jest.setSystemTime(new Date('2027-02-01T12:00:00Z'));db=new TrackingTestDatabase();let seq=0;jest.mocked(Crypto.randomUUID).mockImplementation(()=>`uuid-${++seq}`);jest.mocked(openAppDatabase).mockResolvedValue(db as never);jest.mocked(requireActiveAccountId).mockResolvedValue('account-a');facts();});
