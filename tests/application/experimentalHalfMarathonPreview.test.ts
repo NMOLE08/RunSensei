@@ -75,6 +75,14 @@ describe('experimental half-marathon preview application adapter', () => {
     expect(mockedFacts).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(result)).not.toContain('activeRevisionId');
   });
+  it.each(['improve_performance', 'unknown'] as const)('does not misrepresent the completion-only schedule as a %s objective plan', async (trainingObjective) => {
+    const value = facts(`objective-${trainingObjective}`, { trainingObjective });
+    mockedFacts.mockResolvedValue(value);
+    await expect(openCurrentExperimentalHalfMarathonPreviewWithProvenance('2027-01-01')).resolves.toMatchObject({
+      source: 'half_marathon',
+      value: { kind: 'unavailable', reasonCodes: ['half_marathon_objective_not_authored'], researchOnly: true, productionEligible: false },
+    });
+  });
   it('uses the calendar-only successor when daily time limits were not collected', async () => {
     mockedFacts.mockResolvedValue(facts('account-calendar-only', { minuteLimits: {}, minuteLimitConfirmedDays: [] }));
     const result = await openCurrentExperimentalHalfMarathonPreview();

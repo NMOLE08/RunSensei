@@ -48,6 +48,10 @@ export async function openCurrentExperimentalHalfMarathonPreviewWithProvenance(e
     const foundationEvidenceConfirmed = isDateOnly(d.foundationEvidenceConfirmedAt ?? '');
     return { value: generateFoundationProgram({ context: d.currentTrainingStatus, currentWeeklyRunningSeconds: numberOrNull(d.weeklyMinutes) === null ? null : Number(d.weeklyMinutes) * 60, currentContinuousRunningSeconds: numberOrNull(d.comfortableRunMinutes) === null ? null : Number(d.comfortableRunMinutes) * 60, currentEvidenceConfirmed: foundationEvidenceConfirmed, comfortableWalkingConfirmed: foundationEvidenceConfirmed, demonstratedAfterBreak: d.foundationPostBreakConfirmed === true, requestedFrequency: d.foundationFrequency ?? null, healthConcern: d.healthConcern, healthRelatedInterruption: d.interruption === 'health_related' || d.interruptionReason === 'illness_or_injury' }, { ownerId: facts.ownerId, goalFamily: d.goal, startDate: nextMondayOnOrAfter(d.planStartDate), fixedGoalDate: d.goalDateFixed ? d.goalDate as `${number}-${number}-${number}` : null, availableDays: d.trainingDays.map(weekday => ({ weekday, maxMinutes: numberOrNull(d.minuteLimits[weekday] ?? ''), confirmedByRunner: d.minuteLimitConfirmedDays.includes(weekday) })), unavailableDates: d.unavailableDates.split(',').map(value => value.trim()).filter(isDateOnly), preferredLongRunDay: d.preferredLongDay }), previewContext, source: 'foundation' };
   }
+  // The only authored event schedule is a completion-focused, pace-free
+  // research programme. Do not silently present it as a performance or
+  // time-target plan merely because the runner selected a half marathon.
+  if (facts.draft.trainingObjective !== 'finish') return unavailable(['half_marathon_objective_not_authored'], 'half_marathon');
   if (current.code === 'insufficient_information') return unavailable(['assessment_insufficient_information'], 'half_marathon', { missingEvidence: current.missing, assessmentReasons: current.reasons });
   const readiness = assessHalfMarathonReturnReadiness({
     currentTrainingStatus: facts.draft.currentTrainingStatus,

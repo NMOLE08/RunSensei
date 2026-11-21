@@ -11,6 +11,7 @@ export type PlanAvailabilityReason =
   | 'unsupported_two_day_schedule'
   | 'unsupported_training_schedule'
   | 'unsupported_goal_or_pathway'
+  | 'marathon_event_programme_not_authored'
   | 'draft_policy_not_release_ready'
   | 'no_active_plan';
 
@@ -40,7 +41,8 @@ export function evaluatePlanAvailability(input: { draft: FitnessAssessmentDraft 
   const reasons: PlanAvailabilityReason[] = [];
   if (trainingDays.length === 2) reasons.push('unsupported_two_day_schedule');
   else if (trainingDays.length < 3 || !hasThreeNonConsecutiveDays(trainingDays)) reasons.push('unsupported_training_schedule');
-  if (draft.goal !== '5k' || draft.first5kExperience === 'unknown') reasons.push('unsupported_goal_or_pathway');
+  if (draft.goal === 'marathon') reasons.push('marathon_event_programme_not_authored');
+  else if (draft.goal !== '5k' || draft.first5kExperience === 'unknown') reasons.push('unsupported_goal_or_pathway');
   // The bundled first-5K content is draft-only. This always remains visible
   // separately from any availability limitation.
   reasons.push('draft_policy_not_release_ready', 'no_active_plan');

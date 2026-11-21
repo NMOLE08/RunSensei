@@ -30,7 +30,7 @@ export function consumerStatusForPlanAvailability(value: PlanAvailability) {
   if (value.assessment?.code === 'health_hold' || value.reasons.includes('assessment_health_hold')) kind = 'health_review_required';
   else if (value.assessment?.code === 'needs_reassessment' || value.assessment?.code === 'needs_base_build' || value.reasons.includes('assessment_needs_reassessment')) kind = 'reassessment_required';
   else if (value.reasons.includes('unsupported_two_day_schedule') || value.reasons.includes('unsupported_training_schedule')) kind = 'schedule_conflict';
-  else if (value.reasons.includes('unsupported_goal_or_pathway')) kind = 'program_not_supported';
+  else if (value.reasons.includes('unsupported_goal_or_pathway') || value.reasons.includes('marathon_event_programme_not_authored')) kind = 'program_not_supported';
   else if (value.reasons.includes('draft_policy_not_release_ready')) kind = 'policy_approval_pending';
   return consumerPlanStatus({ kind, reasonCodes: value.reasons });
 }
@@ -66,6 +66,11 @@ export function presentPlanAvailability(value: PlanAvailability): PlanAvailabili
     title: 'Adjust your training availability',
     explanation: 'Your available days are saved. The currently bundled draft pathway has separate scheduling limits and does not author a new prescription for this pattern.',
     actionLabel: 'Review available days', actionPath: '/onboarding/availability?returnTo=/plan&focus=training-days',
+  };
+  if (value.reasons.includes('marathon_event_programme_not_authored')) return {
+    title: 'Marathon event plan is not authored',
+    explanation: 'Your marathon goal is saved, but Torto has no bundled marathon event-programme policy or generator. It will not reuse half-marathon workouts or invent a 42K schedule.',
+    actionLabel: null, actionPath: null,
   };
   if (value.reasons.includes('unsupported_goal_or_pathway')) return {
     title: 'No supported draft pathway',

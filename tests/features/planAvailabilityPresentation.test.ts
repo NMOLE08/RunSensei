@@ -43,4 +43,15 @@ describe('Plan availability explanations', () => {
     expect(presentPlanAvailability(availability(draft({ healthConcern: true }))).title).toBe('Health review required');
     expect(presentPlanAvailability(availability(draft({ trainingDays: [4, 6], minuteLimits: { 4: '60', 6: '60' } }))).title).toBe('Adjust your training availability');
   });
+
+  it('identifies marathon as an un-authored programme family without treating it as missing runner information', () => {
+    const marathon = availability(draft({ goal: 'marathon' }));
+    expect(marathon.reasons).toContain('marathon_event_programme_not_authored');
+    expect(consumerStatusForPlanAvailability(marathon)).toMatchObject({ code: 'program_not_supported', activePlan: false });
+    expect(presentPlanAvailability(marathon)).toMatchObject({
+      title: 'Marathon event plan is not authored',
+      actionLabel: null,
+      actionPath: null,
+    });
+  });
 });

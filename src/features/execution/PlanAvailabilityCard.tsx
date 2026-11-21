@@ -6,10 +6,14 @@ import { consumerStatusForPlanAvailability, presentPlanAvailability } from './pl
 export function PlanAvailabilityCard({ value }: { value: PlanAvailability }) {
   const status = consumerStatusForPlanAvailability(value);
   const recovery = presentPlanAvailability(value);
+  // Publication services own their runner-facing status. For local
+  // availability states, use the more specific explanation layer so an
+  // unsupported marathon does not look like a missing runner answer.
+  const presentation = value.consumerStatus ? { title: status.title, message: status.message } : { title: recovery.title, message: recovery.explanation };
   return <Card>
     <AppText variant="meta">TRAINING PLAN</AppText>
-    <AppText variant="title">{status.title}</AppText>
-    <AppText>{status.message}</AppText>
+    <AppText variant="title">{presentation.title}</AppText>
+    <AppText>{presentation.message}</AppText>
     {status.nextAction.destination !== '/plan' && <Button label={value.consumerStatus ? actionLabel(status.code) : recovery.actionLabel ?? actionLabel(status.code)} tone="secondary" onPress={() => router.push((value.consumerStatus ? status.nextAction.destination : recovery.actionPath ?? status.nextAction.destination) as Href)} />}
     <Button label="Start a run" onPress={() => router.push('/run?mode=run' as Href)} />
   </Card>;
