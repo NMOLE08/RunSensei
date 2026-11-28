@@ -138,6 +138,15 @@ export const migrations = [
   { version: 28, statements: [
     `CREATE TABLE IF NOT EXISTS half_marathon_pathway_intents (owner_id TEXT NOT NULL, goal TEXT NOT NULL CHECK(goal = 'half_marathon'), choice TEXT NOT NULL CHECK(choice IN ('foundation','event_preparation')), schema_version INTEGER NOT NULL CHECK(schema_version = 1), revision INTEGER NOT NULL CHECK(revision > 0), updated_at TEXT NOT NULL, PRIMARY KEY(owner_id, goal))`,
   ] },
+  { version: 29, statements: [
+    `CREATE TABLE IF NOT EXISTS prepared_plan_candidates (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, goal_family TEXT NOT NULL CHECK(goal_family IN ('5k','10k','half_marathon','marathon')), objective TEXT NOT NULL, pathway TEXT NOT NULL, identity_key TEXT NOT NULL, source_evidence_fingerprint TEXT NOT NULL, generated_on TEXT NOT NULL, lifecycle_state TEXT NOT NULL CHECK(lifecycle_state IN ('prepared','superseded')), payload_json TEXT NOT NULL, created_at TEXT NOT NULL, superseded_at TEXT)`,
+    // Only one current prepared candidate may exist per account and selection.
+    // Superseded rows are retained so a later evidence change never destroys a
+    // calendar that was already shown to the runner.
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_prepared_plan_candidates_current_identity ON prepared_plan_candidates(owner_id, identity_key) WHERE lifecycle_state = 'prepared'`,
+    `CREATE INDEX IF NOT EXISTS idx_prepared_plan_candidates_owner_goal ON prepared_plan_candidates(owner_id, goal_family, lifecycle_state)`,
+    `CREATE INDEX IF NOT EXISTS idx_prepared_plan_candidates_owner_created ON prepared_plan_candidates(owner_id, created_at)`,
+  ] },
 ];
 
 let migrationQueue: Promise<void> = Promise.resolve();

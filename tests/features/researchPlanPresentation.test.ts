@@ -1,7 +1,7 @@
 import { simulateFirst5kDraft } from '@/domain/planning/first5kPolicyPack';
 import { generateCurrentFoundationProgram } from '@/domain/planning/foundationProgram';
 import { simulateHalfMarathonDraft } from '@/domain/planning/halfMarathonDraft';
-import { calendarDaysForPlan, presentBeginner5kPlan, presentPolicyResearchPlan, programmeSelectionIdentity } from '@/features/execution/researchPlanPresentation';
+import { calendarDaysForPlan, presentBeginner5kPlan, presentPolicyResearchPlan, presentPolicyWorkout, programmeSelectionIdentity } from '@/features/execution/researchPlanPresentation';
 
 describe('research plan presentation', () => {
   it('retains all authored beginner 5K sessions and their ordered targets', () => {
@@ -34,5 +34,14 @@ describe('research plan presentation', () => {
     expect(plan.weeks).toBe(10);
     expect(plan.workouts).toHaveLength(result.weeks.flatMap((week) => week.workouts).length);
     expect(plan.workouts.at(-1)?.target).toContain('km');
+  });
+
+  it('presents quality, tempo and event roles with meaningful labels', () => {
+    const base = { week: 1, date: '2027-01-05' as const, phase: 'training', purpose: 'Session', protected: false, policyReferences: ['test@1'] };
+    const timed = { kind: 'work' as const, instruction: 'Run', purpose: 'quality', effort: 'controlled', target: { kind: 'duration_seconds' as const, value: 1800 }, repeats: 1 };
+    expect(presentPolicyWorkout({ ...base, slot: 'quality', role: 'quality', target: timed.target, steps: [timed] }).title).toBe('Speed session');
+    expect(presentPolicyWorkout({ ...base, slot: 'tempo', role: 'tempo', target: timed.target, steps: [timed] }).title).toBe('Tempo run');
+    const event = presentPolicyWorkout({ ...base, slot: 'event', role: 'event', phase: 'event', target: { kind: 'distance_meters', value: 10_000 }, steps: [{ kind: 'event', instruction: '10K', purpose: 'event', effort: null, target: { kind: 'distance_meters', value: 10_000 }, repeats: 1 }] });
+    expect(event.timeline[0]?.rows[0]?.indicator).toBe('EVENT');
   });
 });

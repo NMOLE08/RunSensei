@@ -7,7 +7,7 @@ import { calendarDaysForPlan, type ResearchPlanPresentation, type ResearchPlanWo
 const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
 export function PlanSummaryCard({ plan, status }: { plan: ResearchPlanPresentation; status: string }) {
-  return <Card style={styles.summary}><AppText variant="meta">{plan.researchOnly ? 'RESEARCH PREVIEW' : 'ACTIVE PLAN'}</AppText><AppText variant="title">{plan.title}</AppText><AppText>{plan.purpose}</AppText><View style={styles.facts}><AppText variant="meta">{plan.goalLabel.toUpperCase()}</AppText><AppText variant="meta">{plan.weeks} WEEKS</AppText>{plan.trainingFrequency !== null && <AppText variant="meta">{plan.trainingFrequency} SESSIONS / WEEK</AppText>}</View><AppText style={styles.status}>{status}</AppText>{plan.transition && <AppText style={styles.transition}>{plan.transition}</AppText>}</Card>;
+  return <Card style={styles.summary}><AppText variant="meta">TRAINING PLAN</AppText><AppText variant="title">{plan.title}</AppText><AppText>{plan.purpose}</AppText><View style={styles.facts}><AppText variant="meta">{plan.goalLabel.toUpperCase()}</AppText><AppText variant="meta">{plan.weeks} WEEKS</AppText>{plan.trainingFrequency !== null && <AppText variant="meta">{plan.trainingFrequency} SESSIONS / WEEK</AppText>}</View><AppText style={styles.status}>{status}</AppText>{plan.transition && <AppText style={styles.transition}>{plan.transition}</AppText>}</Card>;
 }
 
 export function PlanWeekCalendar({ plan, week, onWeekChange, selectedWorkoutId, onSelectWorkout, recoveryLabel }: { plan: ResearchPlanPresentation; week: number; onWeekChange: (week: number) => void; selectedWorkoutId?: string | null; onSelectWorkout?: (id: string) => void; recoveryLabel?: string | null }) {

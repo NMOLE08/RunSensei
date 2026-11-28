@@ -7,7 +7,6 @@ import { acceptTrackPoint, breakTrackSegment, emptyTrack, type TrackPoint, type 
 import { assertValidRecordingTimeline, transitionSession, type RecordingSegment, type TrackingMetricVersion, type TrainingSession } from '@/domain/tracking/session';
 import type { CompletedKmSplit, MetricEdgeEvidence, MetricsRefreshHealth, MetricsRefreshStage, PersistedGpsQuality } from '@/domain/tracking/liveRunMetrics';
 import { loadActiveGpsBinding, loadGpsState, loadKmSplits, loadLiveMetricEdges, qualityFromRow } from '@/data/trackingMetricsRepository';
-import { addWorkoutCheckpoint } from '@/application/workoutDiagnostics';
 import { getTrackerOwnerId } from './trackerIdentity';
 import { trackerOnly } from '@/config/productMode';
 import { retainPendingResearchCheckin } from './researchCheckin';
@@ -70,14 +69,14 @@ function checkpoint(snapshot: TrackerSnapshot): Promise<void> {
       if (snapshot.researchCheckIn && s.status === 'cancelled') await database.run('DELETE FROM research_pending_checkins WHERE owner_id = ? AND activity_id = ?', [s.ownerId, s.id]);
       else if (snapshot.researchCheckIn) await retainPendingResearchCheckin(database, s.ownerId, s.id, snapshot.researchCheckIn.blockId, snapshot.researchCheckIn.assignmentId, new Date(recordedAt).toISOString());
     });
-    if (recordedAt - lastProgressCheckpoint >= 60000 && s.status === 'recording') { lastProgressCheckpoint = recordedAt; addWorkoutCheckpoint('progress_saved'); }
+    if (recordedAt - lastProgressCheckpoint >= 60000 && s.status === 'recording') { lastProgressCheckpoint = recordedAt; }
   });
-  return task.catch((error) => { addWorkoutCheckpoint('progress_failed'); throw error; });
+  return task;
 }
 
 function checkpointTimeOnly(sessionId: string, ownerId: string): Promise<void> {
   const task = serializeGpsWrite(async () => { const database = await db(); await database.run("UPDATE tracking_sessions SET checkpoint_at_ms = MAX(checkpoint_at_ms, ?) WHERE id = ? AND owner_id = ? AND state = 'recording'", [Date.now(), sessionId, ownerId]); });
-  return task.catch((error) => { addWorkoutCheckpoint('progress_failed'); throw error; });
+  return task;
 }
 
 function stopCheckpointTimer() { if (checkpointTimer !== null) clearInterval(checkpointTimer); checkpointTimer = null; }
@@ -89,7 +88,7 @@ function startCheckpointTimer() {
       if (!saved || saved.session.status !== 'recording') return;
       const lastFix = saved.gpsQuality.lastAcceptedTimestampMs ?? saved.session.segments.at(-1)?.startedAtMs ?? Date.now();
       const weakMessage = 'GPS signal is weak or lost. Distance may be incomplete.';
-      if (!saved.timerOnly && Date.now() - lastFix > 30000) { if (saved.message !== weakMessage) addWorkoutCheckpoint('gps_weak'); current = { ...saved, message: weakMessage }; emit(); }
+      if (!saved.timerOnly && Date.now() - lastFix > 30000) { current = { ...saved, message: weakMessage }; emit(); }
       else if (saved.message === weakMessage) { current = { ...saved, message: null }; emit(); }
       if (Date.now() - lastProgressCheckpoint >= 5000) { lastProgressCheckpoint = Date.now(); void checkpointTimeOnly(saved.session.id, saved.session.ownerId).catch(() => { if (current) { current = { ...current, message: 'Could not save progress. Pause and try again.' }; emit(); } }); }
     }).catch(() => { /* syncTrackerFromPersistence publishes a sanitised refresh-health failure. */ });
@@ -241,7 +240,7 @@ async function markRecordingInterrupted(reason: string) {
   const row = await readOwnedRow(persisted.session.ownerId, persisted.session.id);
   if (!row) return;
   current = { ...persisted, session: transitionSession(persisted.session, 'interrupt', cutoffMs), track: breakTrackSegment(persisted.track), message: reason };
-  await checkpoint(current); await setGpsBindingLifecycle(current.session.id, current.session.ownerId, 'interrupted', cutoffMs); addWorkoutCheckpoint('gps_error'); emit();
+  await checkpoint(current); await setGpsBindingLifecycle(current.session.id, current.session.ownerId, 'interrupted', cutoffMs); emit();
 }
 
 export function subscribeTracker(listener: (value: TrackerSnapshot | null) => void) { listeners.add(listener); listener(current); return () => { listeners.delete(listener); }; }
@@ -261,7 +260,7 @@ export async function recoverTracker(): Promise<TrackerSnapshot | null> {
     const interrupted = await snapshotFromRow({ ...row, state: 'interrupted', segments_json: JSON.stringify(segments) }, 'Recording was interrupted. Finish the recorded portion or discard it.');
     interrupted.session = { ...interrupted.session, status: 'interrupted' }; trackerRevision += 1; current = interrupted; await checkpoint(current); if (!current.timerOnly) await setGpsBindingLifecycle(current.session.id, current.session.ownerId, 'interrupted', open?.endedAtMs ?? row.checkpoint_at_ms);
   } else { trackerRevision += 1; current = await snapshotFromRow(row, row.state === 'interrupted' ? 'Recording was interrupted. Finish the recorded portion or discard it.' : null); }
-  addWorkoutCheckpoint('recovered'); emit(); return current;
+  emit(); return current;
 }
 
 export async function startTracker(input: { sessionId?: string | null; revisionId?: string | null; prescription?: string | null; mode: 'run' | 'walk'; timerOnly?: boolean; researchCheckIn?: { blockId: string; assignmentId: string } }): Promise<void> {
@@ -274,22 +273,17 @@ export async function startTracker(input: { sessionId?: string | null; revisionI
     let fix: Location.LocationObject | null = null;
     let locationPrecision: ReturnType<typeof androidLocationPrecision> = 'unknown';
     if (!timerOnly) {
-      if (!await Location.hasServicesEnabledAsync()) { addWorkoutCheckpoint('services_disabled'); throw new Error('Turn on location services before starting an outdoor activity.'); }
-      addWorkoutCheckpoint('permission_requested');
+      if (!await Location.hasServicesEnabledAsync()) throw new Error('Turn on location services before starting an outdoor activity.');
       const foreground = await Location.getForegroundPermissionsAsync();
       const permission = foreground.granted ? foreground : await Location.requestForegroundPermissionsAsync();
-      if (!permission.granted) { addWorkoutCheckpoint('permission_denied'); throw new Error('Location permission is required before a run can start. Enable it in system settings and try again.'); }
-      addWorkoutCheckpoint('permission_granted');
+      if (!permission.granted) throw new Error('Location permission is required before a run can start. Enable it in system settings and try again.');
       locationPrecision = androidLocationPrecision(permission);
-      if (locationPrecision === 'approximate') addWorkoutCheckpoint('gps_approximate_permission');
       const background = await Location.getBackgroundPermissionsAsync();
       const backgroundPermission = background.granted ? background : await Location.requestBackgroundPermissionsAsync();
       if (!backgroundPermission.granted) throw new Error('Allow location all the time to keep recording when your screen is locked. On Android 11 or newer, choose this in Location settings.');
-      addWorkoutCheckpoint('gps_acquiring');
       fix = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const acquired = acceptTrackPoint(emptyTrack(), trackPoint(fix), Date.now(), 2);
-      if (!acquired.accepted) { addWorkoutCheckpoint('gps_weak'); throw new Error('A reliable GPS fix is not available yet. Move to an open area and try again.'); }
-      addWorkoutCheckpoint('gps_ready');
+      if (!acquired.accepted) throw new Error('A reliable GPS fix is not available yet. Move to an open area and try again.');
     }
     const ownerId = await getTrackerOwnerId(); const now = fix?.timestamp ?? Date.now(); const session = transitionSession({ id: `track-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, ownerId, plannedSessionId: input.sessionId ?? null, prescriptionSnapshot: input.prescription ?? null, mode: input.mode, status: 'preparing', startedAtMs: null, endedAtMs: null, segments: [], distanceMeters: null, metricVersion: 3 }, 'start', now);
     refreshHealth = { status: 'current', lastAttemptMs: now, lastSuccessMs: now, snapshotCheckpointAtMs: now, snapshotAgeMs: 0, errorStage: null, errorCode: null };
@@ -318,7 +312,7 @@ export async function startTracker(input: { sessionId?: string | null; revisionI
         throw error;
       }
     }
-    startCheckpointTimer(); addWorkoutCheckpoint(timerOnly ? 'timer_started' : 'recording_started'); emit();
+    startCheckpointTimer(); emit();
   } finally { busy = false; }
 }
 
@@ -331,7 +325,7 @@ export async function pauseTracker(): Promise<void> {
     stopCheckpointTimer(); await setGpsRecordingCutoff(current.session.id, current.session.ownerId, cutoffMs); await stopLocationPipeline();
     const persisted = await syncTrackerFromPersistence(); if (!persisted || persisted.session.status !== 'recording') return;
     current = { ...persisted, session: transitionSession(persisted.session, 'pause', cutoffMs), track: breakTrackSegment(persisted.track) };
-    await checkpoint(current); await setGpsBindingLifecycle(current.session.id, current.session.ownerId, 'paused', cutoffMs); addWorkoutCheckpoint('paused'); emit();
+    await checkpoint(current); await setGpsBindingLifecycle(current.session.id, current.session.ownerId, 'paused', cutoffMs); emit();
   } finally { busy = false; }
 }
 
@@ -344,7 +338,7 @@ export async function resumeTracker(): Promise<void> {
     if (persisted.timerOnly) {
       const resumedAtMs = Date.now();
       current = { ...persisted, session: transitionSession(persisted.session, 'resume', resumedAtMs), track: breakTrackSegment(persisted.track) };
-      await checkpoint(current); startCheckpointTimer(); addWorkoutCheckpoint('resumed'); emit(); return;
+      await checkpoint(current); startCheckpointTimer(); emit(); return;
     }
     if (!await Location.hasServicesEnabledAsync()) throw new Error('Turn on location services before resuming this workout.');
     // Permission checks happen before durable Resume intent so a denied
@@ -379,7 +373,7 @@ export async function resumeTracker(): Promise<void> {
       current = row ? await snapshotFromRow(row, error instanceof Error ? error.message : 'GPS could not resume.') : persisted;
       emit(); throw error;
     }
-    startCheckpointTimer(); addWorkoutCheckpoint('resumed'); emit();
+    startCheckpointTimer(); emit();
   } finally { busy = false; }
 }
 
@@ -398,8 +392,8 @@ export async function finishTracker(): Promise<TrackerSnapshot> {
       current = { ...persisted, session: transitionSession(persisted.session, 'finish', finishRequestedAtMs) }; await checkpoint(current); if (!current.timerOnly) await setGpsBindingLifecycle(current.session.id, current.session.ownerId, 'finishing', finishRequestedAtMs);
     }
     if (current.session.status === 'finishing') current = { ...current, session: transitionSession(current.session, 'save', Date.now()) };
-    await checkpoint(current); if (!current.timerOnly) await releaseGpsSessionBinding(current.session.id, current.session.ownerId); const finished = current; current = null; addWorkoutCheckpoint('recording_saved'); emit(); return finished;
-  } catch (error) { addWorkoutCheckpoint('recording_failed'); throw error; }
+    await checkpoint(current); if (!current.timerOnly) await releaseGpsSessionBinding(current.session.id, current.session.ownerId); const finished = current; current = null; emit(); return finished;
+  }
   finally { busy = false; }
 }
 
@@ -412,7 +406,7 @@ export async function discardTracker(): Promise<void> {
     if (current.session.status === 'recording') { stopCheckpointTimer(); await setGpsRecordingCutoff(current.session.id, current.session.ownerId, discardRequestedAtMs); await stopLocationPipeline(); await syncTrackerFromPersistence(); }
     if (!current) return;
     if (current.session.status === 'recording') { current = { ...current, session: transitionSession(current.session, 'pause', discardRequestedAtMs), track: breakTrackSegment(current.track) }; await checkpoint(current); }
-    current = { ...current, session: transitionSession(current.session, 'cancel', Date.now()) }; await checkpoint(current); if (!current.timerOnly) await releaseGpsSessionBinding(current.session.id, current.session.ownerId); current = null; addWorkoutCheckpoint('discarded'); emit();
+    current = { ...current, session: transitionSession(current.session, 'cancel', Date.now()) }; await checkpoint(current); if (!current.timerOnly) await releaseGpsSessionBinding(current.session.id, current.session.ownerId); current = null; emit();
   } finally { busy = false; }
 }
 

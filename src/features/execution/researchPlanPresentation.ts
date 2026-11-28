@@ -3,7 +3,7 @@ import type { ScheduledPolicyWorkout } from '@/domain/planning/multiDistancePoli
 import { durationSeconds } from '@/domain/planning/multiDistancePolicy';
 import { formatSeconds, presentPreviewTimeline, presentPreviewWorkout, type WorkoutAccent, type WorkoutTimelineSection } from './workoutPresentation';
 
-export type ResearchProgrammeKind = 'beginner_5k' | 'foundation' | 'half_marathon';
+export type ResearchProgrammeKind = 'beginner_5k' | 'foundation' | 'half_marathon' | '10k' | 'marathon';
 
 export type ResearchPlanWorkout = Readonly<{
   id: string;
@@ -52,7 +52,7 @@ export function presentBeginner5kPlan(value: { inputFingerprint: string; pathway
   };
 }
 
-export function presentPolicyResearchPlan(input: { id: string; kind: 'foundation' | 'half_marathon'; goal: string; title: string; purpose: string; policyReference: string; weeks: number; trainingFrequency: number | null; transition: string | null; workouts: readonly ScheduledPolicyWorkout[] }): ResearchPlanPresentation {
+export function presentPolicyResearchPlan(input: { id: string; kind: Exclude<ResearchProgrammeKind, 'beginner_5k'>; goal: string; title: string; purpose: string; policyReference: string; weeks: number; trainingFrequency: number | null; transition: string | null; workouts: readonly ScheduledPolicyWorkout[] }): ResearchPlanPresentation {
   return {
     id: input.id, kind: input.kind, goalLabel: displayGoal(input.goal), title: input.title, purpose: input.purpose,
     policyReference: input.policyReference, researchOnly: true, weeks: input.weeks, trainingFrequency: input.trainingFrequency,
@@ -64,9 +64,9 @@ export function presentPolicyResearchPlan(input: { id: string; kind: 'foundation
 export function presentPolicyWorkout(workout: ScheduledPolicyWorkout): ResearchPlanWorkout {
   const total = durationSeconds(workout.steps);
   const hasRecovery = workout.steps.some((step) => step.kind === 'recovery');
-  const category = workout.role === 'event' ? 'Completion event' : hasRecovery ? 'Run / walk' : workout.role === 'long' ? 'Longer easy run' : 'Easy running';
-  const title = workout.role === 'event' ? 'Completion event' : workout.role === 'long' ? 'Longer easy run' : hasRecovery ? 'Run / walk intervals' : 'Easy run';
-  const accent: WorkoutAccent = workout.role === 'event' ? 'event' : hasRecovery ? 'coral' : workout.role === 'long' ? 'moss' : 'lavender';
+  const category = workout.role === 'event' ? 'Completion event' : hasRecovery ? 'Run / walk' : workout.role === 'long' ? 'Longer easy run' : workout.role === 'quality' ? 'Speed session' : workout.role === 'tempo' ? 'Tempo running' : 'Easy running';
+  const title = workout.role === 'event' ? 'Completion event' : workout.role === 'long' ? 'Longer easy run' : workout.role === 'quality' ? 'Speed session' : workout.role === 'tempo' ? 'Tempo run' : hasRecovery ? 'Run / walk intervals' : 'Easy run';
+  const accent: WorkoutAccent = workout.role === 'event' ? 'event' : workout.role === 'quality' || hasRecovery ? 'coral' : workout.role === 'long' ? 'moss' : 'lavender';
   return {
     id: `${workout.week}:${workout.slot}:${workout.date}`, date: workout.date, week: workout.week, title, category,
     summary: workout.purpose, target: workout.target.kind === 'duration_seconds' ? formatSeconds(workout.target.value) : workout.target.kind === 'distance_meters' ? `${(workout.target.value / 1000).toFixed(workout.target.value % 1000 === 0 ? 0 : 3)} km` : total === null ? null : formatSeconds(total),
@@ -75,14 +75,14 @@ export function presentPolicyWorkout(workout: ScheduledPolicyWorkout): ResearchP
 }
 
 export function presentPolicyTimeline(workout: ScheduledPolicyWorkout): readonly WorkoutTimelineSection[] {
-  const sections: Array<{ id: string; title: string; detail: string | null; rows: Array<{ id: string; primary: string; secondary: string | null; indicator: 'RUN' | 'WALK' | 'REST' | 'EVENT' | 'STEP' }> }> = [];
+  const sections: { id: string; title: string; detail: string | null; rows: { id: string; primary: string; secondary: string | null; indicator: 'RUN' | 'WALK' | 'REST' | 'EVENT' | 'STEP' }[] }[] = [];
   for (const [index, step] of workout.steps.entries()) {
     const id = step.kind === 'warmup' ? 'warmup' : step.kind === 'cooldown' ? 'cooldown' : 'session';
     const title = id === 'warmup' ? 'Warm-up' : id === 'cooldown' ? 'Cool-down' : workout.role === 'event' ? 'Completion event' : 'Session';
     let section = sections.at(-1);
     if (!section || section.id !== id) { section = { id, title, detail: null, rows: [] }; sections.push(section); }
     const target = step.target.kind === 'duration_seconds' ? formatSeconds(step.target.value) : step.target.kind === 'distance_meters' ? `${(step.target.value / 1000).toFixed(2)} km` : 'Unknown target';
-    const indicator = step.kind === 'work' ? 'RUN' : step.kind === 'recovery' ? 'REST' : step.kind === 'warmup' || step.kind === 'cooldown' ? 'WALK' : 'STEP';
+    const indicator = step.kind === 'event' ? 'EVENT' : step.kind === 'work' ? 'RUN' : step.kind === 'recovery' ? 'REST' : step.kind === 'warmup' || step.kind === 'cooldown' ? 'WALK' : 'STEP';
     section.rows.push({ id: `${index}:${step.kind}`, primary: `${target} · ${step.kind === 'work' ? 'Running' : step.kind === 'recovery' ? 'Walking recovery' : step.kind === 'warmup' ? 'Warm-up walk' : 'Cool-down walk'}`, secondary: [step.instruction, step.effort].filter(Boolean).join(' · ') || null, indicator });
   }
   return sections;

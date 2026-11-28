@@ -79,6 +79,13 @@ function resolveExactPathway(registry: Beginner5kPersonalizationRegistry, experi
   return policy.policy.pathways.find((item) => item.supportedExperience.includes(experience)) ?? null;
 }
 
+/** Stable pathway identity for prepared-candidate matching, without generating a calendar. */
+export function beginner5kPathwayForExperience(experience: FitnessAssessmentDraft['first5kExperience']): Pick<Beginner5kPathway, 'id' | 'version'> | null {
+  const registry = new Beginner5kPersonalizationRegistry(bundledBeginner5kPersonalizationPolicies);
+  const pathway = resolveExactPathway(registry, experience);
+  return pathway ? { id: pathway.id, version: pathway.version } : null;
+}
+
 function evidenceFromDraft(draft: FitnessAssessmentDraft, nowDate: string, constraints: NormalizedRunnerConstraints): Beginner5kCandidateEvidence {
   const numeric = (value: string) => { const parsed = Number(value); return Number.isFinite(parsed) && parsed > 0 ? parsed : null; };
   return {

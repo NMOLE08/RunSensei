@@ -35,5 +35,5 @@ test('saved research route keys its private state by authenticated owner',()=>{
 test('generated foundation adapter keeps its draft restrictions and renders the compact calendar structure',()=>{
   const program=researchBlock().program;const rendered=FoundationProgramPreview({value:program,onRegenerate:jest.fn()});const labels=text(rendered).replace(/\s+/g,' ');
   expect(labels).toContain('Half marathon');expect(labels).toContain('preparation block, not your complete race training plan');
-  expect(labels).toContain('RESEARCH PREVIEW CONTROLS');expect(labels).not.toContain('Activate approved');
+  expect(labels).toContain('PLAN CONTROLS');expect(labels).not.toContain('Activate approved');
 });

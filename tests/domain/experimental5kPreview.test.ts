@@ -1,4 +1,5 @@
 import { assessFitness } from '@/domain/assessment/assessFitness';
+import { assessmentEvidenceFingerprint } from '@/domain/assessment/assessmentEvidence';
 import { emptyFitnessAssessmentDraft } from '@/domain/assessment/types';
 import { createExperimental5kPreview } from '@/domain/research/experimental5kPreview';
 
@@ -69,6 +70,26 @@ describe('experimental 5K preview', () => {
     const draft = makeDraft('account-a'); const assessment = assessFitness(draft, '2026-11-05T12:00:00.000Z');
     const result = createExperimental5kPreview({ ownerId: 'account-a', draft: { ...draft, trainingDays: [0, 2, 4], minuteLimits: { 0: '60', 2: '60', 4: '60' } }, assessment, nowDate: '2026-11-05' });
     expect(result).toMatchObject({ kind: 'blocked', reasonCodes: ['assessment_missing_or_outdated'] });
+  });
+
+  it('keeps the objective and new coaching research fields outside assessment evidence', () => {
+    const draft = makeDraft('account-a');
+    const assessment = assessFitness(draft, '2026-11-05T12:00:00.000Z');
+    const researchOnly = {
+      ...draft,
+      trainingObjective: 'improve_performance' as const,
+      observedWeeklyRunFrequency: 4 as const,
+      runningConsistency: 'established_consistent' as const,
+      runningStyle: 'continuous' as const,
+      easyRunTalkTest: 'full_sentences' as const,
+      usualComfortableRunEffort: 'comfortable' as const,
+      preferredTrainingFrequency: 4 as const,
+    };
+    expect(assessmentEvidenceFingerprint(researchOnly)).toBe(assessmentEvidenceFingerprint(draft));
+    expect(assessFitness(researchOnly, '2026-11-05T12:00:00.000Z').inputFingerprint).toBe(assessment.inputFingerprint);
+    const result = createExperimental5kPreview({ ownerId: 'account-a', draft: researchOnly, assessment, nowDate: '2026-11-05' });
+    expect(result.kind).toBe('preview');
+    expect('reasonCodes' in result).toBe(false);
   });
 
   it('keeps preview data account-scoped and performs no persistence', () => {

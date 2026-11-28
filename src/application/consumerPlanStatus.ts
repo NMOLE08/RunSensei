@@ -1,8 +1,21 @@
 /** Presentation only. Callers must resolve authorization through the publication service. */
 export type ConsumerPlanState = 'plan_ready' | 'preview_available' | 'more_information_needed' | 'reassessment_required' | 'schedule_conflict' | 'health_review_required' | 'program_not_supported' | 'policy_approval_pending' | 'production_authorization_failure' | 'plan_persistence_failure' | 'publication_conflict';
+/**
+ * Presentation-only recovery detail. The optional copy lets a caller explain a
+ * specific blocker without changing the category, eligibility, or authorization.
+ */
+export type ConsumerPlanRecovery = {
+  field: string;
+  destination: string;
+  /** The blocked state this copy was authored for. Mismatched copy is ignored. */
+  category?: Exclude<ConsumerPlanState, 'plan_ready'>;
+  title?: string;
+  message?: string;
+  actionLabel?: string;
+};
 export type ConsumerPlanStatusInput =
   | { kind: 'authorized_persisted_plan'; planId: string; policyReference: string; authorizationVerified: true }
-  | { kind: Exclude<ConsumerPlanState, 'plan_ready'>; reasonCodes: readonly string[]; recovery?: { field: string; destination: string } };
+  | { kind: Exclude<ConsumerPlanState, 'plan_ready'>; reasonCodes: readonly string[]; recovery?: ConsumerPlanRecovery };
 const messages: Record<ConsumerPlanState, readonly [string, string, string]> = {
   publication_conflict: ['Your plan information changed', 'Refresh your plan status before trying again. Existing workouts have not been replaced.', '/plan'],
   production_authorization_failure: ['Plan authorization unavailable', 'Your plan could not be authorized. This is an internal issue; you do not need to repeat onboarding.', '/plan'],
@@ -19,6 +32,14 @@ const messages: Record<ConsumerPlanState, readonly [string, string, string]> = {
 export function consumerPlanStatus(input: ConsumerPlanStatusInput) {
   const code: ConsumerPlanState = input.kind === 'authorized_persisted_plan' ? 'plan_ready' : input.kind;
   if (input.kind === 'authorized_persisted_plan' && (!input.planId || !input.policyReference || input.authorizationVerified !== true)) throw new Error('verified_persisted_plan_required');
-  const [title, message, destination] = messages[code];
-  return { code, title, message, nextAction: { destination: input.kind !== 'authorized_persisted_plan' ? input.recovery?.destination ?? destination : destination }, diagnostics: input.kind === 'authorized_persisted_plan' ? { planId: input.planId, policyReference: input.policyReference, reasonCodes: [] } : { reasonCodes: input.reasonCodes }, activePlan: code === 'plan_ready', recovery: input.kind !== 'authorized_persisted_plan' ? input.recovery : undefined };
+  const recovery = input.kind !== 'authorized_persisted_plan' ? input.recovery : undefined;
+  const [defaultTitle, defaultMessage, defaultDestination] = messages[code];
+  // A recovery may carry reason-specific runner copy, but only for the state
+  // that authored it. Safety, schedule, program, and authorization copy must
+  // never be replaced by a recovery from another category.
+  const activeRecovery = recovery && (recovery.category === undefined || recovery.category === code) ? recovery : undefined;
+  const title = activeRecovery?.title ?? defaultTitle;
+  const message = activeRecovery?.message ?? defaultMessage;
+  const destination = activeRecovery?.destination ?? defaultDestination;
+  return { code, title, message, nextAction: { destination }, diagnostics: input.kind === 'authorized_persisted_plan' ? { planId: input.planId, policyReference: input.policyReference, reasonCodes: [] } : { reasonCodes: input.reasonCodes }, activePlan: code === 'plan_ready', recovery: activeRecovery };
 }

@@ -38,7 +38,8 @@ describe('half-marathon pathway intent persistence', () => {
   it('adds an account-scoped, additive migration', async () => {
     const database = new MemoryDatabase();
     await migrate(database, '2027-01-01T00:00:00.000Z');
-    expect(migrations.at(-1)?.version).toBe(28);
+    expect(migrations.find((migration) => migration.version === 28)).toBeDefined();
+    expect(migrations.at(-1)?.version).toBe(29);
     expect(database.statements.some((sql) => sql.includes('half_marathon_pathway_intents'))).toBe(true);
   });
 

@@ -156,7 +156,6 @@ const mockDatabase = {
 };
 let mockUpdatesStarted = false;
 jest.mock('@/data/migrations', () => ({ migrate: async () => undefined }));
-jest.mock('@/application/workoutDiagnostics', () => ({ addWorkoutCheckpoint: jest.fn() }));
 jest.mock('@/application/trackerIdentity', () => ({ getTrackerOwnerId: async () => 'account-test' }));
 jest.mock('expo-task-manager', () => ({ isTaskDefined: jest.fn(() => false), defineTask: jest.fn() }));
 jest.mock('expo-location', () => ({ Accuracy: { High: 4 }, hasServicesEnabledAsync: jest.fn(async () => true), getForegroundPermissionsAsync: jest.fn(async () => ({ granted: true })), requestForegroundPermissionsAsync: jest.fn(async () => ({ granted: true })), getBackgroundPermissionsAsync: jest.fn(async () => ({ granted: true })), requestBackgroundPermissionsAsync: jest.fn(async () => ({ granted: true })), getCurrentPositionAsync: jest.fn(async () => ({ coords: { latitude: 0, longitude: 0, accuracy: 3 }, timestamp: Date.now() })), hasStartedLocationUpdatesAsync: jest.fn(async () => mockUpdatesStarted), startLocationUpdatesAsync: jest.fn(async () => { mockUpdatesStarted = true; }), stopLocationUpdatesAsync: jest.fn(async () => { mockUpdatesStarted = false; }) }));

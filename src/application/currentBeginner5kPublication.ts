@@ -21,7 +21,16 @@ export type CurrentBeginner5kPublication = {
   status: ReturnType<typeof consumerPlanStatus>; canPublish: boolean;
   preview?: Experimental5kPreview; snapshot?: PlanSnapshot; previewContext?: PlanPreviewIdentity;
 };
-const recoveryFields:Record<string,{field:string;destination:string}>={
+type RecoveryField = { field: string; destination: string };
+/** A typed, sanitized runner-facing recovery for one publication blocker. */
+export type Beginner5kPublicationRecovery = Readonly<RecoveryField & {
+  reasonCode: string;
+  title: string;
+  message: string;
+  actionLabel: string;
+}>;
+
+const recoveryFields:Record<string,RecoveryField>={
   missing_health_concern:{field:'healthConcern',destination:'/onboarding/running?part=running-interruption&focus=health-concern&returnTo=/plan'},
   missing_available_training_days:{field:'trainingDays',destination:'/onboarding/availability?part=availability-days&returnTo=/plan'},
   missing_first_5k_experience:{field:'first5kExperience',destination:'/onboarding/running?part=first5-check&focus=first-5k-experience&returnTo=/plan'},
@@ -35,16 +44,79 @@ const recoveryFields:Record<string,{field:string;destination:string}>={
   invalid_or_missing_currentCapabilityConfirmedAt:{field:'currentCapabilityConfirmedAt',destination:'/onboarding/assessment?returnTo=/plan'},
   missing_plan_start_date:{field:'planStartDate',destination:'/onboarding/goal?part=goal-dates&focus=plan-start-date&returnTo=/plan'},
 };
+
+const recoveryFieldLabels:Record<string,string>={
+  healthConcern:'your health and interruption answer',
+  trainingDays:'the days you can genuinely train',
+  first5kExperience:'your first-5K running experience',
+  adultAgeConfirmed:'your adult confirmation',
+  canWalk30MinutesComfortably:'your 30-minute walking comfort',
+  weeklyMinutes:'your recent weekly running minutes',
+  comfortableRunMinutes:'your comfortable continuous-running time',
+  longestSessionMinutes:'your longest recent session',
+  longestSessionDate:'the date of your longest recent session',
+  weeklyEvidenceConfirmedAt:'your current weekly-running confirmation',
+  currentCapabilityConfirmedAt:'your current running-capacity confirmation',
+  planStartDate:'your plan start date',
+};
+
+const specificRecovery:Record<string,Omit<Beginner5kPublicationRecovery,'reasonCode'>>={
+  assessment_missing_or_outdated:{
+    field:'assessment',destination:'/onboarding/assessment?returnTo=/plan',
+    title:'Review your current starting point',
+    message:'Your saved runner information changed after the last starting-point review. Review it again so the plan can use your current evidence.',
+    actionLabel:'Review current assessment',
+  },
+  interruption_requires_review:{
+    field:'interruption',destination:'/onboarding/running?part=running-interruption&focus=recent-interruption&returnTo=/plan',
+    title:'Review your recent interruption',
+    message:'You reported a recent interruption. Confirm what you can comfortably do now before Torto can compare a plan.',
+    actionLabel:'Review recent interruption',
+  },
+  outdated_running_history:{
+    field:'longestSessionDate',destination:'/onboarding/running?part=running-capacity&focus=longest-session-date&returnTo=/plan',
+    title:'Update your current running evidence',
+    message:'Your recent running evidence is outside the current freshness window. Confirm your current running capacity and longest-session date before the plan can be compared.',
+    actionLabel:'Update running evidence',
+  },
+};
+
+/** Resolves the first known blocker to a single reason-specific recovery. */
+export function beginner5kPublicationRecovery(codes:readonly string[]):Beginner5kPublicationRecovery|undefined {
+  for(const code of codes){
+    const specific=specificRecovery[code];
+    if(specific)return {...specific,reasonCode:code};
+    const field=recoveryFields[code];
+    if(field)return {
+      ...field,reasonCode:code,
+      title:'Add the information still needed',
+      message:`Add ${recoveryFieldLabels[field.field]??'the missing runner information'} so Torto can compare your plan. Your saved information is unchanged.`,
+      actionLabel:'Add missing information',
+    };
+  }
+  return undefined;
+}
+
+const reassessmentRecoveryCodes=new Set(['assessment_missing_or_outdated','interruption_requires_review','outdated_running_history']);
+
+/** Keeps recovery copy scoped to the category that authored it. */
+function recoveryForCategory(kind:Exclude<ConsumerPlanState,'plan_ready'>, codes:readonly string[]) {
+  if(kind==='reassessment_required')return beginner5kPublicationRecovery(codes.filter(code=>reassessmentRecoveryCodes.has(code)));
+  if(kind==='more_information_needed')return beginner5kPublicationRecovery(codes.filter(code=>!reassessmentRecoveryCodes.has(code)));
+  return undefined;
+}
+
 export function publicationBlockedStatus(codes:readonly string[], fallback:ConsumerPlanState='production_authorization_failure') {
-  const recovery=codes.map(c=>recoveryFields[c]).find(Boolean);
+  const hasRecovery=codes.some(code=>Boolean(specificRecovery[code]??recoveryFields[code]));
   const kind:Exclude<ConsumerPlanState,'plan_ready'> = codes.some(c=>c==='health_concern_reported'||c==='health_hold')?'health_review_required'
     :codes.some(c=>c.includes('interruption')||c.includes('outdated')||c==='assessment_missing_or_outdated')?'reassessment_required'
-    :recovery||codes.includes('onboarding_not_started')?'more_information_needed'
+    :hasRecovery||codes.includes('onboarding_not_started')?'more_information_needed'
     :codes.some(c=>c!=='availability_policy_unavailable'&&(c.includes('schedule')||c.includes('availability')||c.includes('weekday')))?'schedule_conflict'
     :codes.some(c=>c==='publication_revision_conflict'||c==='publication_evidence_changed'||c==='publication_account_changed')?'publication_conflict'
     :codes.some(c=>c==='unsupported_policy_family'||c==='goal_not_supported'||c==='no_explicit_pathway_for_experience'||c==='adult_confirmation_not_met'||c==='walk_30_minutes_not_met'||c.endsWith('_below_candidate_minimum'))?'program_not_supported'
     :fallback==='plan_ready'?'production_authorization_failure':fallback;
-  return consumerPlanStatus({kind,reasonCodes:codes,recovery});
+  const recovery=recoveryForCategory(kind,codes);
+  return consumerPlanStatus({kind,reasonCodes:codes,recovery:recovery?{...recovery,category:kind}:undefined});
 }
 
 /** No caller-supplied account, keys, approvals, profile or test-policy override. */

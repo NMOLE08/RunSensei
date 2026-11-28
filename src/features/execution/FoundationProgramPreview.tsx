@@ -19,11 +19,11 @@ export function FoundationProgramPreview({ value: initial, selectedWeek, onSelec
   const workouts = plan.workouts.filter((workout) => workout.week === week);
   const recovery = value.weeks[week - 1]?.recoveryWeek ? 'Recovery week' : null;
   return <>
-    <PlanSummaryCard plan={plan} status="Research preview — not an active training plan." />
+    <PlanSummaryCard plan={plan} status="Preparation calendar generated from your saved profile." />
     <Card><AppText variant="label">Working toward: {plan.goalLabel}</AppText><AppText>This is a preparation block, not your complete race training plan.</AppText></Card>
     <PlanWeekCalendar plan={plan} week={week} onWeekChange={setWeek} selectedWorkoutId={expanded} onSelectWorkout={(id) => setExpanded((current) => current === id ? null : id)} recoveryLabel={recovery} />
     {workouts.map((workout) => <PlanWorkoutSummaryCard key={workout.id} workout={workout} expanded={expanded === workout.id} onToggle={() => setExpanded((current) => current === workout.id ? null : workout.id)} />)}
-    <Card><AppText variant="meta">RESEARCH PREVIEW CONTROLS</AppText>{__DEV__ && <Disclosure title="Technical details" summary="Developer-only validation details"><AppText>{value.policyReference}</AppText><AppText>Independent validation: {value.validation.valid ? 'passed' : 'failed'}</AppText>{value.warnings.map((warning) => <AppText key={warning}>{warning}</AppText>)}</Disclosure>}<Button label="Refresh preview" tone="secondary" onPress={onRegenerate} /></Card>
+    <Card><AppText variant="meta">PLAN CONTROLS</AppText>{__DEV__ && <Disclosure title="Technical details" summary="Developer-only validation details"><AppText>{value.policyReference}</AppText><AppText>Independent validation: {value.validation.valid ? 'passed' : 'failed'}</AppText>{value.warnings.map((warning) => <AppText key={warning}>{warning}</AppText>)}</Disclosure>}<Button label="Refresh plan" tone="secondary" onPress={onRegenerate} /></Card>
     {experimental5kPreviewEnabled && <ResearchFoundationProgress program={value} onView={(next) => { setViewed(next); setExpanded(null); setWeek(1); }} outcomeRequest={outcomeRequest} />}
   </>;
 }

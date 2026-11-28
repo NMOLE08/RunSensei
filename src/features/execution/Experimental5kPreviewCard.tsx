@@ -1,17 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { AppText, Button, Card, Disclosure } from '@/design/components';
 import type { CurrentExperimental5kPreview } from '@/application/experimental5kPreview';
 import type { First5kDraftSession } from '@/domain/planning/first5kPolicyPack';
 import { colors, spacing } from '@/design/tokens';
 import { editPathForRequirement, targetForOnboardingRequirement, type OnboardingRequirement } from '@/domain/assessment/onboardingRequirements';
-import { consumerPlanStatus } from '@/application/consumerPlanStatus';
-import type { CurrentBeginner5kPublication } from '@/application/currentBeginner5kPublication';
-import { formatSeconds, presentPreviewTimeline, presentPreviewWorkout } from './workoutPresentation';
-import { WorkoutStepTimeline } from './WorkoutStepTimeline';
+import { formatSeconds } from './workoutPresentation';
 import { PlanSummaryCard, PlanWeekCalendar, PlanWorkoutSummaryCard } from './ResearchPlanComponents';
 import { presentBeginner5kPlan } from './researchPlanPresentation';
+import { internalBeginner5kCoachingReview } from '@/config/internalCoachingReview';
 
 const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 const reasonCopy: Record<string, string> = {
@@ -45,9 +43,9 @@ const reasonCopy: Record<string, string> = {
   longest_session_below_candidate_minimum: 'The continuous-running draft requires a longer recent session. Torto will not substitute a workload.',
 };
 
-export function Experimental5kPreviewCard({ value, selectedWeek, onSelectedWeekChange, onRegenerate, activationStatus, canPublish = false, onPublish, publishing = false, publicationError = null }: { value: CurrentExperimental5kPreview; selectedWeek?: number; onSelectedWeekChange?: (week: number) => void; onRegenerate: () => void; activationStatus?: CurrentBeginner5kPublication['status']; canPublish?: boolean; onPublish?: () => void; publishing?: boolean; publicationError?: string | null }) {
+export function Experimental5kPreviewCard({ value, selectedWeek, onSelectedWeekChange, onRegenerate, canPublish = false, onPublish, publishing = false, publicationError = null }: { value: CurrentExperimental5kPreview; selectedWeek?: number; onSelectedWeekChange?: (week: number) => void; onRegenerate: () => void; canPublish?: boolean; onPublish?: () => void; publishing?: boolean; publicationError?: string | null }) {
   if (value.kind !== 'preview') return <BlockedPreview value={value} onRegenerate={onRegenerate} />;
-  return <Preview value={value} selectedWeek={selectedWeek} onSelectedWeekChange={onSelectedWeekChange} onRegenerate={onRegenerate} activationStatus={activationStatus} canPublish={canPublish} onPublish={onPublish} publishing={publishing} publicationError={publicationError} />;
+  return <Preview value={value} selectedWeek={selectedWeek} onSelectedWeekChange={onSelectedWeekChange} onRegenerate={onRegenerate} canPublish={canPublish} onPublish={onPublish} publishing={publishing} publicationError={publicationError} />;
 }
 
 function BlockedPreview({ value, onRegenerate }: { value: Exclude<CurrentExperimental5kPreview, { kind: 'preview' }>; onRegenerate: () => void }) {
@@ -90,50 +88,28 @@ function requirementFor5kReason(reasons: readonly string[]): OnboardingRequireme
   return null;
 }
 
-function Preview({ value, selectedWeek, onSelectedWeekChange, onRegenerate, activationStatus, canPublish, onPublish, publishing, publicationError }: { value: Extract<CurrentExperimental5kPreview, { kind: 'preview' }>; selectedWeek?: number; onSelectedWeekChange?: (week: number) => void; onRegenerate: () => void; activationStatus?: CurrentBeginner5kPublication['status']; canPublish: boolean; onPublish?: () => void; publishing: boolean; publicationError: string | null }) {
+function Preview({ value, selectedWeek, onSelectedWeekChange, onRegenerate, canPublish, onPublish, publishing, publicationError }: { value: Extract<CurrentExperimental5kPreview, { kind: 'preview' }>; selectedWeek?: number; onSelectedWeekChange?: (week: number) => void; onRegenerate: () => void; canPublish: boolean; onPublish?: () => void; publishing: boolean; publicationError: string | null }) {
   const [uncontrolledWeek, setUncontrolledWeek] = useState(initialPreviewWeek); const [expanded, setExpanded] = useState<string | null>(null);
   const plan = useMemo(() => presentBeginner5kPlan(value), [value]);
   const week = Math.max(1, Math.min(12, selectedWeek ?? uncontrolledWeek));
   const setWeek = (next: number) => onSelectedWeekChange ? onSelectedWeekChange(Math.max(1, Math.min(12, next))) : setUncontrolledWeek(Math.max(1, Math.min(12, next)));
-  const previewKey = `${value.inputFingerprint}:${value.pathway.id}@${value.pathway.version}:${value.scheduleAnchor}:${value.sessions[0]?.date ?? ''}:${value.sessions.at(-1)?.date ?? ''}`;
-  const previewKeyRef = useRef(previewKey);
-  useEffect(() => {
-    if (previewKeyRef.current === previewKey) return;
-    previewKeyRef.current = previewKey;
-    setWeek(1);
-    setExpanded(null);
-  }, [previewKey]);
   const sessions = value.sessions.filter((session) => session.week === week);
   const recoveryWeek = week === 4 || week === 8;
-  const previewStatus = consumerPlanStatus({ kind: 'preview_available', reasonCodes: [] });
   const weekTotal = sessions.reduce((total, session) => total + (session.durationSeconds ?? 0), 0);
   return <>
-    <PlanSummaryCard plan={plan} status="Research preview — activation remains unavailable until the required authorization is configured." />
+    <PlanSummaryCard plan={plan} status="Personalized calendar generated from your saved profile." />
     <Card style={styles.experimentalCard}>
-      <View style={styles.heroTop}><View style={styles.heroCopy}><AppText variant="meta">{previewPathwayLabel(value.pathway.id)}</AppText><AppText variant="title">Your training plan</AppText><AppText style={styles.heroDescription}>Internal research preview only. Three authored sessions each week, paced by effort—not pace targets.</AppText></View><View style={styles.heroWeek}><AppText variant="label">12</AppText><AppText variant="meta">WEEKS</AppText></View></View>
-      <View style={styles.statusLine}><View style={styles.previewDot} /><AppText style={styles.warning}>{previewStatus.message}</AppText></View>
-      {activationStatus && activationStatus.code !== 'preview_available' && <View style={styles.activationStatus}><AppText variant="meta">ACTIVATION STATUS</AppText><AppText variant="label">{activationStatus.title}</AppText><AppText style={styles.warning}>{activationStatus.message}</AppText></View>}
+      <View style={styles.heroTop}><View style={styles.heroCopy}><AppText variant="meta">{previewPathwayLabel(value.pathway.id)}</AppText><AppText variant="title">Your training plan</AppText><AppText style={styles.heroDescription}>Three authored sessions each week, paced by effort—not pace targets.</AppText></View><View style={styles.heroWeek}><AppText variant="label">12</AppText><AppText variant="meta">WEEKS</AppText></View></View>
       <AppText variant="meta">TRAINING DAYS · {value.feasibility.selectedWeekdays.map((day) => days[day]).join(' · ')}</AppText>
-      {__DEV__ && <Disclosure title="Technical details" summary="Developer-only preview information"><AppText variant="meta">STRICT GATE · {value.strictProductionGate.kind.replaceAll('_', ' ').toUpperCase()}</AppText><AppText variant="meta">POLICY · {value.pathway.id}@{value.pathway.version}</AppText></Disclosure>}
+      {__DEV__ && <Disclosure title="Technical details" summary="Developer-only plan information"><AppText variant="meta">STRICT GATE · {value.strictProductionGate.kind.replaceAll('_', ' ').toUpperCase()}</AppText><AppText variant="meta">CURRENT POLICY · {value.pathway.id}@{value.pathway.version}</AppText><AppText variant="meta">SUPPLIED REVIEW REFERENCE · {internalBeginner5kCoachingReview.reviewedPolicy}</AppText><AppText variant="meta">REVIEWER · {internalBeginner5kCoachingReview.reviewerId} · {internalBeginner5kCoachingReview.decision.toUpperCase()}</AppText><AppText variant="meta">EXACT POLICY / CRYPTOGRAPHIC MATCH · INCOMPLETE</AppText></Disclosure>}
     </Card>
     <PlanWeekCalendar plan={plan} week={week} onWeekChange={setWeek} selectedWorkoutId={expanded} onSelectWorkout={(id) => setExpanded((current) => current === id ? null : id)} recoveryLabel={recoveryWeek ? 'Recovery week' : null} />
     {weekTotal > 0 && <Card style={styles.weekCard}><View style={styles.weekFacts}><AppText variant="meta">{sessions.length} SESSIONS</AppText><AppText variant="meta">{formatSeconds(weekTotal)} SCHEDULED</AppText></View>{recoveryWeek && <AppText style={styles.recovery}>Recovery week: this protected lower-load structure comes from the draft policy pack.</AppText>}</Card>}
     {plan.workouts.filter((workout) => workout.week === week).map((workout) => <PlanWorkoutSummaryCard key={workout.id} workout={workout} expanded={expanded === workout.id} onToggle={() => setExpanded((current) => current === workout.id ? null : workout.id)} />)}
-    <Card>{publicationError && <AppText style={styles.error}>{publicationError}</AppText>}{canPublish && onPublish && <Button label={publishing ? 'Activating plan…' : 'Activate approved Week 1'} disabled={publishing} onPress={onPublish} />}<Button label="Refresh preview" tone="secondary" disabled={publishing} onPress={onRegenerate} /><Button label="Edit running information" tone="secondary" disabled={publishing} onPress={() => router.push('/onboarding/running?returnTo=/plan' as Href)} /><Button label="Start a run" disabled={publishing} onPress={() => router.push('/run?mode=run' as Href)} /></Card>
+    <Card>{publicationError && <AppText style={styles.error}>{publicationError}</AppText>}{canPublish && onPublish && <Button label={publishing ? 'Activating plan…' : 'Activate approved Week 1'} disabled={publishing} onPress={onPublish} />}<Button label="Refresh plan" tone="secondary" disabled={publishing} onPress={onRegenerate} /><Button label="Edit running information" tone="secondary" disabled={publishing} onPress={() => router.push('/onboarding/running?returnTo=/plan' as Href)} /><Button label="Start a run" disabled={publishing} onPress={() => router.push('/run?mode=run' as Href)} /></Card>
   </>;
 }
 
-function Session({ session, expanded, onToggle }: { session: First5kDraftSession; expanded: boolean; onToggle: () => void }) {
-  const workout = presentPreviewWorkout(session);
-  const date = new Date(`${session.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
-  return <Card style={{ ...styles.sessionCard, ...accentBorder(workout.accent) }}>
-    <View style={[styles.sessionAccent, accentBorder(workout.accent)]} />
-    <Pressable accessibilityRole="button" accessibilityState={{ expanded }} accessibilityLabel={`${date}. ${workout.title}. ${workout.target ?? 'Duration unknown'}. ${expanded ? 'Hide' : 'Show'} workout steps`} onPress={onToggle} style={styles.sessionHeader}><View style={styles.sessionCopy}><AppText variant="meta">{date.toUpperCase()} · {workout.category.toUpperCase()}</AppText><AppText variant="section">{workout.title}</AppText><AppText style={styles.sessionSummary}>{workout.summary}</AppText></View><View style={styles.sessionTarget}><AppText variant="label">{workout.target ?? '—'}</AppText><AppText variant="label" style={styles.sessionChevron}>{expanded ? '−' : '›'}</AppText></View></Pressable>
-    {expanded && <View style={styles.steps}><WorkoutStepTimeline accent={workout.accent} sections={presentPreviewTimeline(session)} /></View>}
-  </Card>;
-}
-
-function weekCalendar(sessions: readonly First5kDraftSession[]) { const first = sessions[0]?.date; if (!first) return []; const start = new Date(`${first}T00:00:00Z`); const day = start.getUTCDay() === 0 ? 6 : start.getUTCDay() - 1; start.setUTCDate(start.getUTCDate() - day); return Array.from({ length: 7 }, (_, index) => { const date = new Date(start); date.setUTCDate(start.getUTCDate() + index); const value = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`; return { date: value, day: index, session: sessions.find((session) => session.date === value) ?? null }; }); }
 export function initialPreviewWeek() { return 1; }
 export function movePreviewWeek(current: number, direction: -1 | 1) { return Math.max(1, Math.min(12, current + direction)); }
 export function calendarMonthYear(daysInWeek: readonly { date: string }[]) { const first = daysInWeek[0]?.date; return first ? new Date(`${first}T12:00:00`).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : 'Training week'; }
@@ -142,9 +118,8 @@ export function shortWorkoutLabel(session: First5kDraftSession) { const name = p
 export function previewPathwayLabel(pathwayId: string) {
   if (pathwayId === 'continuous_running_beginner_fixed_12_week') return 'BEGINNER 5K · CONTINUOUS RUNNING';
   if (pathwayId === 'true_beginner_fixed_12_week_run_walk') return 'BEGINNER 5K · RUN / WALK';
-  return 'BEGINNER 5K · RESEARCH PREVIEW';
+  return 'BEGINNER 5K · TRAINING PLAN';
 }
-function accentBorder(accent: ReturnType<typeof presentPreviewWorkout>['accent']): ViewStyle { return ({ moss: { borderColor: colors.moss }, coral: { borderColor: colors.coral }, butter: { borderColor: colors.butter }, lavender: { borderColor: '#9877B8' }, event: { borderColor: colors.ink } })[accent]; }
 function friendlyConflict(conflict: { code: string; week: number | null; workout: string | null; date: string | null; weekday: number | null; requiredMinutes: number | null; availableMinutes: number | null; details: string }) { if (conflict.code === 'session_exceeds_time_limit') return `${conflict.date ? `${days[conflict.weekday ?? 0]} ${conflict.date}: ` : ''}the full authored session needs ${conflict.requiredMinutes} minutes, but the confirmed limit is ${conflict.availableMinutes} minutes.`; if (conflict.code === 'unconfirmed_time_limit') return `${conflict.date ? `${days[conflict.weekday ?? 0]} ${conflict.date}: ` : ''}the saved ${conflict.availableMinutes ?? 'unknown'}-minute value has not been confirmed as the runner’s actual availability.`; return conflict.details; }
 
 const styles = StyleSheet.create({

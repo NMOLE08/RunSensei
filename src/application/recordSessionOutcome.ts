@@ -3,7 +3,6 @@ import { migrate } from '@/data/migrations';
 import { TrainingRepository } from '@/data/repositories';
 import type { ActivityLog, ResolutionKind } from '@/domain/training/entities';
 import { refreshActivePlanReminders } from '@/application/reminderRefresh';
-import { addWorkoutCheckpoint } from '@/application/workoutDiagnostics';
 import { requireActiveAccountId } from './localAccount';
 
 export type OutcomeKind = 'as_planned' | 'partial' | 'different_workout' | 'did_not_run';
@@ -40,4 +39,17 @@ export async function recordSessionOutcome(repository: TrainingRepository, input
   return { saved, logId };
 }
 
-export async function recordSessionOutcomeOnDevice(input: RecordSessionOutcomeInput): Promise<{ saved: boolean; logId: string; reminderWarning: string | null }> { const tracked = input.source !== 'manual'; try { const ownerId = await requireActiveAccountId(); const database = await openAppDatabase(); await migrate(database, new Date().toISOString()); const repository = new TrainingRepository(database, ownerId); const result = await recordSessionOutcome(repository, input); if (tracked) addWorkoutCheckpoint('feedback_saved'); if (!result.saved) return { ...result, reminderWarning: null }; try { await refreshActivePlanReminders(repository); return { ...result, reminderWarning: null }; } catch { if (tracked) addWorkoutCheckpoint('reminder_failed'); return { ...result, reminderWarning: 'Your outcome was saved, but reminders could not be updated yet.' }; } } catch (error) { if (tracked) addWorkoutCheckpoint('feedback_failed'); throw error; } }
+export async function recordSessionOutcomeOnDevice(input: RecordSessionOutcomeInput): Promise<{ saved: boolean; logId: string; reminderWarning: string | null }> {
+  const ownerId = await requireActiveAccountId();
+  const database = await openAppDatabase();
+  await migrate(database, new Date().toISOString());
+  const repository = new TrainingRepository(database, ownerId);
+  const result = await recordSessionOutcome(repository, input);
+  if (!result.saved) return { ...result, reminderWarning: null };
+  try {
+    await refreshActivePlanReminders(repository);
+    return { ...result, reminderWarning: null };
+  } catch {
+    return { ...result, reminderWarning: 'Your outcome was saved, but reminders could not be updated yet.' };
+  }
+}

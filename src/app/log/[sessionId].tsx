@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Button, Card, Field, Screen } from '@/design/components';
 import { recordSessionOutcomeOnDevice, type OutcomeKind } from '@/application/recordSessionOutcome';
@@ -10,7 +10,6 @@ import { StateCard } from '@/features/execution/components';
 import { encodeWorkoutFeedback, type WorkoutFeedback } from '@/domain/training/feedback';
 import { markWorkoutFeedbackSaved } from '@/application/workoutTracker';
 import { localDateOnly } from '@/features/execution/viewModel';
-import { addWorkoutCheckpoint } from '@/application/workoutDiagnostics';
 import { colors, spacing } from '@/design/tokens';
 
 const options: { kind: OutcomeKind; label: string; description: string }[] = [
@@ -24,7 +23,6 @@ function durationCopy(value: string | undefined) { const seconds = Number(value)
 export default function LogSessionScreen() {
   const { sessionId, corrects, trackedId, trackedSeconds, trackedMeters, trackedMode, trackedSource, trackedDate } = useLocalSearchParams<{ sessionId: string; corrects?: string; trackedId?: string; trackedSeconds?: string; trackedMeters?: string; trackedMode?: string; trackedSource?: string; trackedDate?: string }>(); const { status, data, reload } = useActivePlan();
   const [kind, setKind] = useState<OutcomeKind>(trackedId ? (trackedMode === 'walk' ? 'different_workout' : 'partial') : 'as_planned'); const [actualDate, setActualDate] = useState(() => trackedId ? trackedDate ?? localDateOnly() : ''); const [minutes, setMinutes] = useState(trackedSeconds ? String(Math.round(Number(trackedSeconds) / 60 * 100) / 100) : ''); const [distance, setDistance] = useState(''); const [distanceEdited, setDistanceEdited] = useState(false); const [effort, setEffort] = useState(''); const [comparison, setComparison] = useState<WorkoutFeedback['comparison']>(null); const [reason, setReason] = useState(trackedMode === 'walk' ? 'Walk' : ''); const [concern, setConcern] = useState(false); const [error, setError] = useState<string | null>(null); const [submitting, setSubmitting] = useState(false); const submissionInFlight = useRef(false);
-  useEffect(() => { if (trackedId) addWorkoutCheckpoint('feedback_opened'); }, [trackedId]);
   if (status === 'loading') return <Screen><AppText variant="meta">OPENING ACTIVITY FORM…</AppText></Screen>;
   if (status === 'unavailable') return <Screen><StateCard actionLabel="Try again" onAction={reload} title="Logging unavailable">Local storage could not be opened. Nothing has been recorded.</StateCard></Screen>;
   const assignment = data?.snapshot.assignments.find((item) => item.id === sessionId || item.logicalSessionId === sessionId);

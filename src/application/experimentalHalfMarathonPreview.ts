@@ -1,13 +1,14 @@
-import { buildMultiDistancePlanningInput } from './multiDistancePlanningInput';
 import { loadCurrentAccountPlanFacts } from './planAvailability';
-import { simulateCurrentHalfMarathonDraft, type HalfMarathonResearchSimulation } from '@/domain/planning/halfMarathonDraft';
+import type { HalfMarathonResearchSimulation } from '@/domain/planning/halfMarathonDraft';
 import { assessFitness } from '@/domain/assessment/assessFitness';
 import { generateCurrentFoundationProgram as generateFoundationProgram } from '@/domain/planning/foundationProgram';
 import { nextMondayOnOrAfter } from '@/domain/planning/runnerConstraints';
-import { localDateOnly } from '@/features/execution/viewModel';
 import { isDateOnly } from '@/domain/calendar/dateOnly';
 import { assessHalfMarathonReturnReadiness, type HalfMarathonReturnReadiness } from '@/domain/planning/halfMarathonReturnReadiness';
+import { localDateOnly } from '@/features/execution/viewModel';
 import { previewIdentityFor, type PlanPreviewIdentity } from './planPreviewIdentity';
+import { buildMultiDistancePlanningInput } from './multiDistancePlanningInput';
+import { simulateCurrentHalfMarathonDraft } from '@/domain/planning/halfMarathonDraft';
 
 export type CurrentExperimentalHalfMarathonPreview = HalfMarathonResearchSimulation | ReturnType<typeof generateFoundationProgram> | { kind: 'unavailable'; reasonCodes: readonly string[]; missingEvidence?: readonly string[]; assessmentReasons?: readonly string[]; readiness?: HalfMarathonReturnReadiness; researchOnly: true; productionEligible: false };
 export type CurrentExperimentalHalfMarathonPreviewResponse = Readonly<{

@@ -65,6 +65,77 @@ test('missing evidence identifies source field and existing focused screen',asyn
   expect(publicationBlockedStatus(['health_concern_reported']).code).toBe('health_review_required');
   expect(publicationBlockedStatus(['assessment_missing_or_outdated']).code).toBe('reassessment_required');
 });
+test('explains each blocked 5K reason with its own focused recovery destination',()=>{
+  const assessment=publicationBlockedStatus(['assessment_missing_or_outdated']);
+  expect(assessment).toMatchObject({
+    code:'reassessment_required',activePlan:false,
+    title:'Review your current starting point',
+    message:expect.stringContaining('starting-point review'),
+    nextAction:{destination:'/onboarding/assessment?returnTo=/plan'},
+    recovery:{field:'assessment',destination:'/onboarding/assessment?returnTo=/plan',actionLabel:'Review current assessment'},
+  });
+
+  const interruption=publicationBlockedStatus(['interruption_requires_review']);
+  expect(interruption).toMatchObject({
+    code:'reassessment_required',activePlan:false,
+    title:'Review your recent interruption',
+    message:expect.stringContaining('recent interruption'),
+    nextAction:{destination:'/onboarding/running?part=running-interruption&focus=recent-interruption&returnTo=/plan'},
+    recovery:{field:'interruption',actionLabel:'Review recent interruption'},
+  });
+
+  const outdated=publicationBlockedStatus(['outdated_running_history']);
+  expect(outdated).toMatchObject({
+    code:'reassessment_required',activePlan:false,
+    title:'Update your current running evidence',
+    message:expect.stringContaining('freshness window'),
+    nextAction:{destination:'/onboarding/running?part=running-capacity&focus=longest-session-date&returnTo=/plan'},
+    recovery:{field:'longestSessionDate',actionLabel:'Update running evidence'},
+  });
+
+  for(const status of [assessment,interruption,outdated]){
+    expect(`${status.title} ${status.message}`.toLowerCase()).not.toContain('norwegian');
+    expect(status.message.toLowerCase()).not.toContain('performance');
+  }
+});
+
+test('keeps health hold copy authoritative when a mapped missing field is also present',()=>{
+  for(const codes of [
+    ['health_concern_reported','missing_health_concern'],
+    ['health_hold','outdated_running_history'],
+    ['health_concern_reported','missing_weekly_running_minutes','interruption_requires_review'],
+  ]){
+    const status=publicationBlockedStatus(codes);
+    expect(status).toMatchObject({
+      code:'health_review_required',activePlan:false,
+      title:'Health review required',
+      message:'A reported concern requires review before training can proceed.',
+      nextAction:{destination:'/onboarding/running?part=running-interruption&returnTo=/plan'},
+    });
+    expect(status.recovery).toBeUndefined();
+  }
+});
+
+test('keeps missing evidence on its existing exact field recovery',()=>{
+  expect(publicationBlockedStatus(['missing_weekly_running_minutes'])).toMatchObject({
+    code:'more_information_needed',activePlan:false,
+    title:'Add the information still needed',
+    message:expect.stringContaining('weekly running minutes'),
+    nextAction:{destination:'/onboarding/running?part=running-history&focus=weekly-running&returnTo=/plan'},
+    recovery:{field:'weeklyMinutes',destination:'/onboarding/running?part=running-history&focus=weekly-running&returnTo=/plan'},
+  });
+  expect(publicationBlockedStatus(['missing_first_5k_experience'])).toMatchObject({
+    code:'more_information_needed',
+    nextAction:{destination:'/onboarding/running?part=first5-check&focus=first-5k-experience&returnTo=/plan'},
+    recovery:{field:'first5kExperience'},
+  });
+  expect(publicationBlockedStatus(['invalid_or_missing_longestSessionDate'])).toMatchObject({
+    code:'more_information_needed',
+    nextAction:{destination:'/onboarding/running?part=running-capacity&focus=longest-session-date&returnTo=/plan'},
+    recovery:{field:'longestSessionDate'},
+  });
+});
+
 test('switch while fetching authorization exposes neither old account preview nor plan',async()=>{
   (globalThis.fetch as jest.Mock).mockImplementationOnce(async(_url,options)=>{account='owner-b';return {ok:true,json:async()=>f.signTrust({...f.payload,requestNonce:JSON.parse(options.body).nonce})};});
   const result=await publishCurrentBeginner5kWeekOne();
